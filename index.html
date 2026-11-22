@@ -611,8 +611,11 @@ function mapCsvRows(matrix) {
   const iCat = idx(["categoria", "category"]);
   const iTag = idx(["etiqueta", "tag", "subcategoria"]);
   const iDesc = idx(["descripcion", "detalle", "concepto", "description"]);
+  const iImporte = idx(["importe", "monto", "valor"]);
+  const iMoneda = idx(["moneda", "currency"]);
+  const iTc = idx(["tc_aplicado", "tc", "tipo_cambio"]);
   const iUsd = idx(["monto_usd", "usd", "importe_usd"]);
-  const iArs = idx(["monto_ars", "ars", "importe_ars", "monto"]);
+  const iArs = idx(["monto_ars", "ars", "importe_ars"]);
 
   const out = [];
   for (let r = 1; r < matrix.length; r++) {
@@ -628,8 +631,36 @@ function mapCsvRows(matrix) {
     else if (tipoRaw.includes("GASTO")) tipo = "GASTO";
     if (!tipo) continue;
 
-    const usd = iUsd !== -1 ? parseNum(row[iUsd]) : 0;
-    const ars = iArs !== -1 ? parseNum(row[iArs]) : 0;
+    const rawImporte = iImporte !== -1 ? parseNum(row[iImporte]) : 0;
+    const moneda = iMoneda !== -1 ? String(row[iMoneda] || "").trim().toUpperCase() : "";
+    const tcRaw = iTc !== -1 ? parseNum(row[iTc]) : 0;
+    const usdCol = iUsd !== -1 ? parseNum(row[iUsd]) : 0;
+    const arsCol = iArs !== -1 ? parseNum(row[iArs]) : 0;
+
+    let usd = 0;
+    let ars = 0;
+
+    if (moneda === "USD") {
+      usd = usdCol !== 0 ? usdCol : rawImporte;
+      if (arsCol !== 0) {
+        ars = arsCol;
+      } else if (tcRaw > 0) {
+        ars = usd * tcRaw;
+      } else {
+        ars = usd;
+      }
+    } else if (moneda === "ARS") {
+      ars = arsCol !== 0 ? arsCol : rawImporte;
+      if (usdCol !== 0) {
+        usd = usdCol;
+      } else if (tcRaw > 0) {
+        usd = ars / tcRaw;
+      }
+    } else {
+      usd = usdCol;
+      ars = arsCol !== 0 ? arsCol : rawImporte;
+    }
+
     if (usd === 0 && ars === 0) continue;
 
     out.push({
