@@ -1,2103 +1,1251 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard de Finanzas Personales</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Finanzas Personales — Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
-          },
-          colors: {
-            midnight: {
-              950: '#070b14',
-              900: '#0b1020',
-              850: '#10172d',
-              800: '#16203d',
-              700: '#24335e',
-              600: '#35487d'
-            },
-            violetAccent: {
-              500: '#635bff',
-              600: '#4f46e5'
-            }
-          }
-        }
-      }
-    };
-  </script>
   <style>
     :root {
-      color-scheme: dark;
+      --bg: #0b0f19;
+      --bg-card: #13192b;
+      --bg-card-2: #192138;
+      --bg-input: #101626;
+      --border: #25304d;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-soft: rgba(59, 130, 246, 0.16);
+      --green: #10b981;
+      --green-soft: rgba(16, 185, 129, 0.16);
+      --red: #f43f5e;
+      --red-soft: rgba(244, 63, 94, 0.16);
+      --amber: #f59e0b;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
     }
-    html:not(.dark) {
-      color-scheme: light;
+
+    [data-theme="light"] {
+      --bg: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-2: #f8fafc;
+      --bg-input: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #2563eb;
+      --primary-soft: rgba(37, 99, 235, 0.12);
+      --green: #059669;
+      --green-soft: rgba(5, 150, 105, 0.12);
+      --red: #e11d48;
+      --red-soft: rgba(225, 29, 72, 0.12);
+      --amber: #d97706;
+      --shadow: 0 6px 18px -4px rgba(15, 23, 42, 0.08);
     }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
-      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding: 18px 22px 48px;
+      transition: background 0.2s, color 0.2s;
     }
-    .tabular-nums {
-      font-variant-numeric: tabular-nums;
+
+    .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+    /* Top Header */
+    .topbar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 14px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 18px; box-shadow: var(--shadow);
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 38px; height: 38px; border-radius: 10px; background: var(--primary-soft);
+      color: var(--primary); display: grid; place-items: center; font-weight: 800; font-size: 18px;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
+    .brand-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; }
+    .badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary); letter-spacing: 0.4px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(100, 116, 139, 0.35);
-      border-radius: 9999px;
+    .status-line { font-size: 12px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); display: inline-block; }
+    .dot.live { background: var(--green); }
+
+    .top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    button, select, input {
+      font-family: inherit; font-size: 13px; color: var(--text);
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 9px; padding: 7px 12px; outline: none;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(100, 116, 139, 0.55);
+    button { cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s; }
+    button:hover { border-color: var(--primary); }
+    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.primary:hover { opacity: 0.92; }
+
+    .segmented {
+      display: inline-flex; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 9px; padding: 2px;
     }
-    .chart-box {
-      position: relative;
-      height: 290px;
-      width: 100%;
+    .segmented button {
+      border: none; background: transparent; padding: 5px 10px; border-radius: 7px; font-size: 12px; color: var(--text-muted);
     }
-    .chart-box-sm {
-      position: relative;
-      height: 230px;
-      width: 100%;
+    .segmented button.active { background: var(--primary); color: #fff; }
+
+    /* Filters Card */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow);
     }
+    .filters-head {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .filters-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+    .pill-muted {
+      font-size: 11px; padding: 3px 9px; border-radius: 999px;
+      background: var(--bg-card-2); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .filters-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 12px; align-items: start;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; position: relative; }
+    .field label { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; }
+    .field select, .multi-btn { width: 100%; justify-content: space-between; text-align: left; }
+
+    /* Multi-select dropdown */
+    .multi-menu {
+      position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; z-index: 40;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px; box-shadow: var(--shadow); max-height: 250px; overflow-y: auto; display: none;
+    }
+    .multi-menu.open { display: block; }
+    .multi-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px;
+      font-size: 12.5px; cursor: pointer;
+    }
+    .multi-item:hover { background: var(--bg-card-2); }
+    .multi-item input { width: auto; accent-color: var(--primary); }
+    .multi-actions { display: flex; justify-content: space-between; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .multi-actions button { padding: 3px 8px; font-size: 11px; }
+
+    /* KPI Grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .kpi {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px;
+    }
+    .kpi-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.4px; }
+    .kpi-val { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .kpi-sub { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+    .tag-green { background: var(--green-soft); color: var(--green); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
+    .tag-red { background: var(--red-soft); color: var(--red); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
+
+    /* Charts & Sections */
+    .grid-2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; }
+    @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .sec-title { font-size: 16px; font-weight: 700; }
+    .sec-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .sec-meta {
+      font-size: 11.5px; color: var(--primary); background: var(--primary-soft);
+      padding: 4px 10px; border-radius: 8px; font-weight: 600; margin-top: 4px; display: inline-block;
+    }
+
+    .chart-box { position: relative; height: 300px; width: 100%; }
+    .chart-box-sm { position: relative; height: 250px; width: 100%; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { background: var(--bg-card-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+    tr:hover td { background: var(--bg-card-2); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pos { color: var(--green); font-weight: 700; }
+    .neg { color: var(--red); font-weight: 700; }
+    .clickable { cursor: pointer; }
+    .clickable:hover { color: var(--primary); text-decoration: underline; }
+
+    /* Hierarchy Explorer */
+    .hier-controls {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;
+      background: var(--bg-card-2); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;
+    }
+    .breadcrumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; margin-bottom: 10px; }
+    .crumb {
+      padding: 4px 10px; border-radius: 999px; background: var(--bg-card-2);
+      border: 1px solid var(--border); cursor: pointer; font-weight: 600;
+    }
+    .crumb.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 100;
+      display: none; place-items: center; padding: 16px;
+    }
+    .modal-backdrop.open { display: grid; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      max-width: 580px; width: 100%; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;
+    }
+    .modal h3 { font-size: 17px; }
+    .modal p { font-size: 13px; color: var(--text-muted); }
+    .modal input[type="text"] { width: 100%; }
+    .modal-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-900 dark:bg-midnight-950 dark:text-slate-100 transition-colors duration-200 antialiased">
-  <!-- Contenedor principal -->
-  <div class="min-h-screen flex flex-col">
-    <!-- Barra superior -->
-    <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-midnight-700/80 bg-white/90 dark:bg-midnight-900/90 backdrop-blur-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violetAccent-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Finanzas Personales
-              </h1>
-              <span id="badgeCurrency" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25">
-                USD
-              </span>
-              <span id="badgeSourceMode" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">
-                Demo / Respaldo local
-              </span>
-            </div>
-            <p id="syncStatusText" class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-              Datos de respaldo cargados · Conectá tu CSV publicado para sincronizar en vivo
-            </p>
-          </div>
+<body>
+<div class="container">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">$</div>
+      <div>
+        <div class="brand-title">
+          Finanzas Personales
+          <span class="badge" id="badgeCurrency">USD</span>
         </div>
-
-        <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" onclick="openCsvModal()"
-            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 hover:bg-slate-50 dark:hover:bg-midnight-800 text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-xs">
-            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span>CSV / Sheet</span>
-          </button>
-
-          <button type="button" onclick="syncFromGoogleSheets(true)"
-            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-violetAccent-500 hover:bg-violetAccent-600 text-white transition cursor-pointer shadow-sm shadow-indigo-500/25">
-            <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Sincronizar</span>
-          </button>
-
-          <button type="button" onclick="toggleThemeMode()" aria-label="Cambiar tema"
-            class="p-2 rounded-xl border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 hover:bg-slate-50 dark:hover:bg-midnight-800 text-slate-600 dark:text-amber-300 transition cursor-pointer">
-            <svg id="iconSun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <svg id="iconMoon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.46z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Banner de aviso / estado -->
-    <div id="statusBanner" class="hidden max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
-      <div id="statusBannerInner" class="rounded-xl px-4 py-2.5 text-xs font-medium flex items-center justify-between gap-3 border">
-        <span id="statusBannerText"></span>
-        <button type="button" onclick="hideStatusBanner()" class="text-current opacity-70 hover:opacity-100 font-bold cursor-pointer">✕</button>
-      </div>
-    </div>
-
-    <!-- Contenido principal -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
-      <!-- Panel de Filtros Globales -->
-      <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-4 sm:p-5 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-              <svg class="w-4 h-4 text-violetAccent-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              Filtros Globales
-            </span>
-            <span id="badgeRecordCount" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-midnight-800 text-slate-600 dark:text-slate-300 tabular-nums">
-              0 registros
-            </span>
-            <span id="badgeTrailingWindow" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 tabular-nums">
-              Ventana 12M: --
-            </span>
-          </div>
-
-          <div class="flex items-center gap-2 flex-wrap">
-            <!-- Toggle Moneda USD / ARS -->
-            <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700">
-              <button id="btnCurrUSD" type="button" onclick="setCurrency('USD')"
-                class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-violetAccent-500 text-white shadow-xs">
-                USD
-              </button>
-              <button id="btnCurrARS" type="button" onclick="setCurrency('ARS')"
-                class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                ARS
-              </button>
-            </div>
-
-            <!-- Toggle Enfoque Gastos / Ingresos -->
-            <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700">
-              <button id="btnModeGASTO" type="button" onclick="setAnalysisMode('GASTO')"
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                Gastos
-              </button>
-              <button id="btnModeINGRESO" type="button" onclick="setAnalysisMode('INGRESO')"
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Ingresos
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5 Controles de Filtros -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          <!-- Año -->
-          <div>
-            <label for="filterYear" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Año
-            </label>
-            <select id="filterYear" onchange="onYearOrMonthChange()"
-              class="w-full rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
-            </select>
-          </div>
-
-          <!-- Mes (solo 12 meses del año + todos los meses del año) -->
-          <div>
-            <label for="filterMonth" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Mes del Año
-            </label>
-            <select id="filterMonth" onchange="onYearOrMonthChange()"
-              class="w-full rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
-            </select>
-          </div>
-
-          <!-- Cuenta / Medio -->
-          <div>
-            <label for="filterAccount" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Cuenta / Medio
-            </label>
-            <select id="filterAccount" onchange="onFilterChange()"
-              class="w-full rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
-              <option value="ALL">Todas las cuentas</option>
-            </select>
-          </div>
-
-          <!-- Excluir Cuentas (Multi-select compacto con checkboxes) -->
-          <div class="relative" id="excludeMultiWrapper">
-            <label for="btnExcludeMulti" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Excluir Cuentas
-            </label>
-            <button id="btnExcludeMulti" type="button" onclick="toggleExcludeDropdown(event)"
-              class="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer text-left">
-              <span id="excludeMultiLabel" class="truncate">Ninguna excluida</span>
-              <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <div id="excludeMultiMenu"
-              class="hidden absolute left-0 right-0 mt-1.5 z-40 rounded-xl border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 shadow-2xl p-2 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
-            </div>
-          </div>
-
-          <!-- Alcance de Tipo (strictly 3 options: Ingresos y Gastos, Ingresos, Gastos) -->
-          <div>
-            <label for="filterTipoScope" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Alcance de Tipo
-            </label>
-            <select id="filterTipoScope" onchange="onScopeChange()"
-              class="w-full rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
-              <option value="BOTH" selected>Ingresos y Gastos</option>
-              <option value="INGRESO">Ingresos</option>
-              <option value="GASTO">Gastos</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      <!-- Tarjetas de KPI -->
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Ingresos</span>
-            <span class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </span>
-          </div>
-          <div id="kpiIncomeValue" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2 tabular-nums">
-            US$0
-          </div>
-          <div class="flex items-center gap-2 mt-2.5 flex-wrap text-xs">
-            <span id="kpiIncomeCount" class="px-2 py-0.5 rounded-md font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 tabular-nums">
-              0 ops
-            </span>
-            <span id="kpiIncomeSub" class="text-slate-500 dark:text-slate-400 tabular-nums"></span>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Gastos</span>
-            <span class="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-500 flex items-center justify-center">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-            </span>
-          </div>
-          <div id="kpiExpenseValue" class="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2 tabular-nums">
-            US$0
-          </div>
-          <div class="flex items-center gap-2 mt-2.5 flex-wrap text-xs">
-            <span id="kpiExpenseCount" class="px-2 py-0.5 rounded-md font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-300 tabular-nums">
-              0 consumos
-            </span>
-            <span id="kpiExpenseSub" class="text-slate-500 dark:text-slate-400 tabular-nums"></span>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Flujo Neto (Ingresos - Gastos)</span>
-            <span class="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </span>
-          </div>
-          <div id="kpiNetValue" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2 tabular-nums">
-            US$0
-          </div>
-          <div class="flex items-center gap-2 mt-2.5 flex-wrap text-xs">
-            <span id="kpiNetMargin" class="px-2 py-0.5 rounded-md font-semibold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 tabular-nums">
-              0.0% margen neto
-            </span>
-            <span id="kpiNetStatus" class="text-slate-500 dark:text-slate-400"></span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Navegación de Pestañas -->
-      <div class="flex items-center gap-2 border-b border-slate-200 dark:border-midnight-800 pb-2 overflow-x-auto custom-scrollbar">
-        <button id="tabBtnVISUAL" type="button" onclick="setActiveTab('VISUAL')"
-          class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap bg-violetAccent-500 text-white shadow-xs">
-          Análisis Visual & Macro-Categorías
-        </button>
-        <button id="tabBtnBALANCE" type="button" onclick="setActiveTab('BALANCE')"
-          class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-midnight-800">
-          Balance Mensual y Flujo Neto (12M)
-        </button>
-      </div>
-
-      <!-- TAB 1: ANÁLISIS VISUAL -->
-      <div id="panelVISUAL" class="space-y-5">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <!-- Evolución Temporal Mensual -->
-          <section class="lg:col-span-7 rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
-            <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
-              <div>
-                <h2 class="text-base font-bold text-slate-900 dark:text-white">Evolución Temporal Mensual</h2>
-                <p id="evolutionSubtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Flujo Neto, Ingresos y Gastos según filtros activos
-                </p>
-              </div>
-              <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700">
-                <button id="btnWin12M" type="button" onclick="setChartWindow('12M')"
-                  class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer bg-violetAccent-500 text-white">
-                  12 Meses
-                </button>
-                <button id="btnWinALL" type="button" onclick="setChartWindow('ALL')"
-                  class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer text-slate-600 dark:text-slate-300">
-                  Cronológico
-                </button>
-              </div>
-            </div>
-
-            <div class="chart-box">
-              <canvas id="evolutionChart"></canvas>
-            </div>
-
-            <div id="evolutionLegend" class="flex flex-wrap items-center justify-center gap-5 pt-3 mt-2 border-t border-slate-100 dark:border-midnight-800 text-xs font-medium text-slate-600 dark:text-slate-300">
-            </div>
-          </section>
-
-          <!-- Desglose por Macro-Categoría -->
-          <section class="lg:col-span-5 rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
-            <div class="flex items-start justify-between gap-2 mb-3">
-              <div>
-                <h2 class="text-base font-bold text-slate-900 dark:text-white">Desglose por Macro-Categoría</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Distribución por macro-categoría (clic para drill-down)
-                </p>
-              </div>
-              <span id="macroScopeBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-300">
-                GASTOS
-              </span>
-            </div>
-
-            <div class="chart-box-sm">
-              <canvas id="macroDonutChart"></canvas>
-            </div>
-
-            <div id="macroDonutLegend" class="mt-3 space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-            </div>
-          </section>
-        </div>
-
-        <!-- Resumen Mensual de Balance y Flujo Neto -->
-        <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
-          <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
-            <div>
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">Resumen Mensual de Balance y Flujo Neto</h2>
-              <p id="miniBalanceContext" class="text-xs font-semibold text-indigo-600 dark:text-indigo-300 mt-0.5 tabular-nums">
-                Período: -- · Cuentas: --
-              </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Comparativa mensual directa entre Ingresos, Gastos y Flujo Neto (Ingresos - Gastos)
-              </p>
-            </div>
-            <button type="button" onclick="setActiveTab('BALANCE')"
-              class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
-              Ver balance 12M detallado →
-            </button>
-          </div>
-
-          <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse text-xs tabular-nums">
-              <thead>
-                <tr class="border-b border-slate-200 dark:border-midnight-700 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th class="py-2.5 px-3 font-semibold">Mes</th>
-                  <th class="py-2.5 px-3 font-semibold text-right text-emerald-600 dark:text-emerald-400">Ingresos</th>
-                  <th class="py-2.5 px-3 font-semibold text-right text-rose-600 dark:text-rose-400">Gastos</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Flujo Neto</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Margen / Ahorro</th>
-                </tr>
-              </thead>
-              <tbody id="miniBalanceBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <!-- TAB 2: BALANCE MENSUAL Y FLUJO NETO (VENTANA 12 MESES) -->
-      <div id="panelBALANCE" class="hidden space-y-5">
-        <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
-          <div class="mb-4">
-            <h2 class="text-base font-bold text-slate-900 dark:text-white">Balance Mensual y Flujo Neto (Ventana 12 Meses)</h2>
-            <p id="fullBalanceContext" class="text-xs font-semibold text-indigo-600 dark:text-indigo-300 mt-0.5 tabular-nums">
-              Período: -- · Cuentas: --
-            </p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Detalle mes a mes desde el último mes con información disponible, incluyendo cobertura de gastos y flujo neto acumulado
-            </p>
-          </div>
-
-          <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse text-xs tabular-nums">
-              <thead>
-                <tr class="border-b border-slate-200 dark:border-midnight-700 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th class="py-2.5 px-3 font-semibold">Mes</th>
-                  <th class="py-2.5 px-3 font-semibold text-right text-emerald-600 dark:text-emerald-400">Ingresos</th>
-                  <th class="py-2.5 px-3 font-semibold text-right text-rose-600 dark:text-rose-400">Gastos</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Flujo Neto</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Cobertura</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Neto Acumulado</th>
-                </tr>
-              </thead>
-              <tbody id="fullBalanceBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <!-- DRILL-DOWN JERÁRQUICO: MACRO_CATEGORIA -> CATEGORIA -> ETIQUETA -> TRANSACCIONES -->
-      <section id="drilldownSection" class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm space-y-5">
-        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/70 dark:border-midnight-700/70 pb-4">
-          <div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">Drill-Down Jerárquico por Macro-Categoría</h2>
-              <span id="drillFlowPill" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300">
-                GASTOS
-              </span>
-            </div>
-            <p id="drillHeaderContext" class="text-xs font-semibold text-indigo-600 dark:text-indigo-300 mt-0.5 tabular-nums">
-              Período: -- · Cuentas: --
-            </p>
-            <div id="drillBreadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs mt-2 text-slate-500 dark:text-slate-400">
-            </div>
-          </div>
-
-          <button id="btnResetDrill" type="button" onclick="resetDrillDown()"
-            class="hidden px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 hover:bg-slate-100 dark:hover:bg-midnight-800 text-slate-700 dark:text-slate-200 transition cursor-pointer">
-            ← Reiniciar selección
-          </button>
-        </div>
-
-        <!-- Nivel 1, 2 y 3 -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <!-- Nivel 1: Macro_Categoria -->
-          <div class="lg:col-span-4 space-y-2.5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              1. Macro-Categorías
-            </h3>
-            <div id="macroListContainer" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-            </div>
-          </div>
-
-          <!-- Nivel 2: Categoría -->
-          <div class="lg:col-span-4 space-y-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <h3 id="level2Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                2. Categorías
-              </h3>
-              <span id="level2Badge" class="text-[11px] text-slate-400"></span>
-            </div>
-            <div class="chart-box-sm">
-              <canvas id="categoryBarChart"></canvas>
-            </div>
-            <div id="categoryListContainer" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            </div>
-          </div>
-
-          <!-- Nivel 3: Etiquetas -->
-          <div class="lg:col-span-4 space-y-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <h3 id="level3Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                3. Etiquetas
-              </h3>
-              <span id="level3Badge" class="text-[11px] text-slate-400"></span>
-            </div>
-            <div id="etiquetaListContainer" class="space-y-1.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Transacciones Individuales -->
-        <div class="pt-4 border-t border-slate-200/70 dark:border-midnight-700/70 space-y-3">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 id="level4Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                4. Transacciones Individuales
-              </h3>
-              <p id="level4Context" class="text-xs font-semibold text-indigo-600 dark:text-indigo-300 mt-0.5 tabular-nums">
-                Período: -- · Cuentas: --
-              </p>
-              <p id="level4Subheading" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Mostrando movimientos filtrados por la selección actual
-              </p>
-            </div>
-            <div class="flex items-center gap-2">
-              <input id="txSearchInput" type="text" oninput="renderTransactionsTable()" placeholder="Buscar descripción, cuenta o etiqueta..."
-                class="w-56 sm:w-64 rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50" />
-            </div>
-          </div>
-
-          <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse text-xs tabular-nums">
-              <thead>
-                <tr class="border-b border-slate-200 dark:border-midnight-700 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th class="py-2.5 px-3 font-semibold">Fecha</th>
-                  <th class="py-2.5 px-3 font-semibold">Tipo</th>
-                  <th class="py-2.5 px-3 font-semibold">Cuenta</th>
-                  <th class="py-2.5 px-3 font-semibold">Macro / Categoría / Etiqueta</th>
-                  <th class="py-2.5 px-3 font-semibold">Descripción</th>
-                  <th class="py-2.5 px-3 font-semibold text-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody id="transactionsBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- Modal de Conexión CSV / Google Sheets -->
-  <div id="csvModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 p-6 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="text-base font-bold text-slate-900 dark:text-white">Conectar CSV de Google Sheets o Archivo Local</h3>
-        <button type="button" onclick="closeCsvModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white font-bold cursor-pointer">✕</button>
-      </div>
-
-      <div class="space-y-1.5">
-        <label for="csvUrlInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-          URL CSV publicada de la pestaña <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-midnight-900">Movimientos</code>
-        </label>
-        <input id="csvUrlInput" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv"
-          class="w-full rounded-xl border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50" />
-        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-          Se excluyen automáticamente los registros con tipo <code class="font-semibold">PATRIMONIAL</code>.
-        </p>
-      </div>
-
-      <div class="space-y-1.5 pt-2 border-t border-slate-200/70 dark:border-midnight-700/70">
-        <label for="csvFileInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-          O cargar un archivo <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-midnight-900">.csv</code> desde tu computadora
-        </label>
-        <input id="csvFileInput" type="file" accept=".csv,text/csv" onchange="handleLocalCsvFile(event)"
-          class="block w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violetAccent-500/15 file:text-violetAccent-600 dark:file:text-violetAccent-300 hover:file:bg-violetAccent-500/25 cursor-pointer" />
-      </div>
-
-      <div class="flex items-center justify-between gap-2 pt-3">
-        <button type="button" onclick="restoreSampleData()"
-          class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-midnight-800 transition cursor-pointer">
-          Usar datos de respaldo
-        </button>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="closeCsvModal()"
-            class="px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-midnight-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-midnight-800 transition cursor-pointer">
-            Cancelar
-          </button>
-          <button type="button" onclick="saveAndSyncCsvUrl()"
-            class="px-4 py-2 rounded-xl text-xs font-bold bg-violetAccent-500 hover:bg-violetAccent-600 text-white transition cursor-pointer">
-            Guardar y Sincronizar
-          </button>
+        <div class="status-line">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">Demo / Respaldo local (Conectá tu CSV de Movimientos)</span>
         </div>
       </div>
     </div>
+
+    <div class="top-actions">
+      <div class="segmented" id="currencyToggle">
+        <button data-curr="USD" class="active">USD</button>
+        <button data-curr="ARS">ARS</button>
+      </div>
+      <button id="btnOpenCsv">📥 CSV / Sheet</button>
+      <button id="btnSync">🔄 Sincronizar</button>
+      <button id="btnTheme" title="Cambiar tema">🌓</button>
+    </div>
+  </header>
+
+  <!-- GLOBAL FILTERS -->
+  <section class="card">
+    <div class="filters-head">
+      <div class="filters-title">
+        <span>Filtros Globales</span>
+        <span class="pill-muted" id="pillCount">0 registros</span>
+        <span class="pill-muted" id="pillWindow">Ventana 12M: --</span>
+      </div>
+      <button id="btnResetFilters" style="font-size:12px; padding:5px 10px;">Limpiar filtros</button>
+    </div>
+
+    <div class="filters-grid">
+      <div class="field">
+        <label for="selYear">Año</label>
+        <select id="selYear"></select>
+      </div>
+
+      <div class="field">
+        <label for="selMonth">Mes del Año</label>
+        <select id="selMonth"></select>
+      </div>
+
+      <div class="field">
+        <label for="selAccount">Cuenta / Medio</label>
+        <select id="selAccount"></select>
+      </div>
+
+      <div class="field" id="excludeWrap">
+        <label>Excluir Cuentas (Múltiple)</label>
+        <button type="button" class="multi-btn" id="btnExcludeToggle">
+          <span id="excludeLabel">Ninguna excluida</span>
+          <span>▾</span>
+        </button>
+        <div class="multi-menu" id="excludeMenu">
+          <div class="multi-actions">
+            <button type="button" id="btnExcludeClear">Limpiar selección</button>
+            <button type="button" id="btnExcludeClose">Listo</button>
+          </div>
+          <div id="excludeList"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="selScope">Alcance de Tipo</label>
+        <select id="selScope">
+          <option value="ALL">Ingresos y Gastos</option>
+          <option value="INGRESO">Ingresos</option>
+          <option value="GASTO">Gastos</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPIs -->
+  <section class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-top"><span>TOTAL INGRESOS</span><span class="tag-green">INGRESOS</span></div>
+      <div class="kpi-val pos" id="kpiIngresos">--</div>
+      <div class="kpi-sub"><span id="kpiIngOps">0 ops</span> • <span id="kpiIngMeta">Período seleccionado</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>TOTAL GASTOS</span><span class="tag-red">GASTOS</span></div>
+      <div class="kpi-val neg" id="kpiGastos">--</div>
+      <div class="kpi-sub"><span id="kpiGasOps">0 ops</span> • <span id="kpiGasMeta">Período seleccionado</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>FLUJO NETO (INGRESOS - GASTOS)</span><span class="badge" id="kpiMarginBadge">0% margen</span></div>
+      <div class="kpi-val" id="kpiNeto">--</div>
+      <div class="kpi-sub" id="kpiNetoSub">Resultado operativo neto (sin Patrimonial)</div>
+    </div>
+  </section>
+
+  <!-- MAIN CHARTS -->
+  <section class="grid-2">
+    <div class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Evolución Temporal Mensual</div>
+          <div class="sec-sub" id="evoSubtitle">Últimos 12 meses anclados al último mes disponible</div>
+        </div>
+        <div class="segmented" id="evoModeToggle">
+          <button data-mode="12M" class="active">12 Meses</button>
+          <button data-mode="YEAR">Año Seleccionado</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chartEvo"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Distribución por Macro-Categoría</div>
+          <div class="sec-sub">Hacé clic en una porción para filtrar el análisis jerárquico</div>
+        </div>
+        <span class="badge" id="donutTypeBadge">GASTOS</span>
+      </div>
+      <div class="chart-box"><canvas id="chartMacro"></canvas></div>
+    </div>
+  </section>
+
+  <!-- HIERARCHICAL ANALYSIS: MACRO -> CATEGORIA -> ETIQUETA -->
+  <section class="card">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Análisis Jerárquico: Macro-Categoría → Categoría → Etiqueta</div>
+        <div class="sec-sub">Explorá el desglose cruzado por los 3 niveles de clasificación</div>
+        <div class="sec-meta" id="metaHierarchy">Período: -- • Cuentas: --</div>
+      </div>
+      <button id="btnResetHier" style="font-size:12px;">↺ Reiniciar selección</button>
+    </div>
+
+    <div class="hier-controls">
+      <div class="field">
+        <label for="selMacro">1. Macro-Categoría</label>
+        <select id="selMacro"><option value="">Todas las Macro-Categorías</option></select>
+      </div>
+      <div class="field">
+        <label for="selCat">2. Categoría</label>
+        <select id="selCat"><option value="">Todas las Categorías</option></select>
+      </div>
+      <div class="field">
+        <label for="selTag">3. Etiqueta</label>
+        <select id="selTag"><option value="">Todas las Etiquetas</option></select>
+      </div>
+      <div class="field">
+        <label for="selHierType">Tipo a analizar</label>
+        <select id="selHierType">
+          <option value="GASTO">Gastos</option>
+          <option value="INGRESO">Ingresos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="breadcrumbs" id="hierBreadcrumbs"></div>
+
+    <div class="grid-2">
+      <div>
+        <div class="sec-sub" style="margin-bottom:6px; font-weight:700;" id="hierChartTitle">Top conceptos del nivel actual</div>
+        <div class="chart-box-sm"><canvas id="chartHier"></canvas></div>
+      </div>
+      <div class="table-wrap" style="max-height:285px; overflow-y:auto; margin-top:0;">
+        <table>
+          <thead>
+            <tr>
+              <th id="hierColName">Macro-Categoría</th>
+              <th class="num">Ops</th>
+              <th class="num">Monto</th>
+              <th class="num">% Part.</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyHier"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MONTHLY BALANCE TABLE -->
+  <section class="card">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
+        <div class="sec-sub">Comparativa mensual directa entre Ingresos, Gastos y Flujo Neto</div>
+        <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Ingresos</th>
+            <th class="num">Gastos</th>
+            <th class="num">Flujo Neto</th>
+            <th class="num">Margen / Ahorro</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyBalance"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- INDIVIDUAL TRANSACTIONS -->
+  <section class="card">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Transacciones Individuales</div>
+        <div class="sec-sub">Listado filtrado por período, cuentas y jerarquía seleccionada (mostrando hasta 300 más recientes)</div>
+        <div class="sec-meta" id="metaTx">Período: -- • Cuentas: --</div>
+      </div>
+      <input type="text" id="txtSearch" placeholder="Buscar en descripción, etiqueta o cuenta..." style="min-width:260px;" />
+    </div>
+    <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Cuenta</th>
+            <th>Macro-Categoría</th>
+            <th>Categoría</th>
+            <th>Etiqueta</th>
+            <th>Descripción</th>
+            <th class="num">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTx"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- CSV / SHEET MODAL -->
+<div class="modal-backdrop" id="csvModal">
+  <div class="modal">
+    <h3>Conectar Google Sheets (CSV en vivo)</h3>
+    <p>Pegá el enlace CSV publicado de la pestaña <strong>Movimientos</strong> (<em>Archivo → Compartir → Publicar en la web → Movimientos → CSV</em>) o subí un archivo <code>.csv</code> local.</p>
+    <input type="text" id="inputCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv" />
+    <div style="display:flex; align-items:center; gap:10px; font-size:12.5px;">
+      <span>O cargar archivo local:</span>
+      <input type="file" id="inputCsvFile" accept=".csv,text/csv" />
+    </div>
+    <div class="modal-foot">
+      <button id="btnClearSavedUrl">Borrar URL guardada</button>
+      <button id="btnCloseModal">Cancelar</button>
+      <button class="primary" id="btnSaveCsvUrl">Guardar y Sincronizar</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    // =========================================================================
-    // CONFIGURACIÓN Y DATOS DE RESPALDO INMEDIATO (SIN PATRIMONIAL)
-    // =========================================================================
-    const STORAGE_CSV_URL_KEY = 'finanzas_dashboard_csv_url_v1';
-    const STORAGE_THEME_KEY = 'finanzas_dashboard_theme_v1';
+<script>
+const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const STORAGE_URL_KEY = "finanzas_movimientos_csv_url_v1";
+const STORAGE_THEME_KEY = "finanzas_dashboard_theme_v1";
 
-    const MONTH_NAMES_FULL = {
-      '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
-      '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
-      '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
-    };
+const DEMO_ROWS = [
+  { fecha: "2026-01-10", year: 2026, month: 1, ym: "2026-01", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios mensuales", usd: 5200, ars: 6240000 },
+  { fecha: "2026-01-15", year: 2026, month: 1, ym: "2026-01", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas ordinarias", usd: 620, ars: 744000 },
+  { fecha: "2026-01-22", year: 2026, month: 1, ym: "2026-01", tipo: "GASTO", cuenta: "Amex", macro: "Alimentación y Hogar", cat: "Supermercado", tag: "Jumbo", desc: "Compra semanal", usd: 340, ars: 408000 },
+  { fecha: "2026-02-05", year: 2026, month: 2, ym: "2026-02", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios febrero", usd: 5175, ars: 6210000 },
+  { fecha: "2026-02-12", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Servicios", tag: "Luz y Gas", desc: "Edenor + Metrogas", usd: 195, ars: 234000 },
+  { fecha: "2026-02-18", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Mercado Pago", macro: "Ocio y Viajes", cat: "Gastronomía", tag: "Restaurantes", desc: "Cena fin de semana", usd: 165, ars: 198000 },
+  { fecha: "2026-03-08", year: 2026, month: 3, ym: "2026-03", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios marzo", usd: 5400, ars: 6480000 },
+  { fecha: "2026-03-14", year: 2026, month: 3, ym: "2026-03", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Salud y Bienestar", cat: "Medicina Prepaga", tag: "OSDE", desc: "Cuota mensual", usd: 480, ars: 576000 },
+  { fecha: "2026-03-25", year: 2026, month: 3, ym: "2026-03", tipo: "GASTO", cuenta: "Amex", macro: "Estilo de Vida y Compras", cat: "Indumentaria", tag: "Deportes", desc: "Zapatillas running", usd: 210, ars: 252000 }
+];
 
-    const MONTH_NAMES_SHORT = {
-      '01': 'Ene', '02': 'Feb', '03': 'Mar', '04': 'Abr',
-      '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Ago',
-      '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dic'
-    };
+let state = {
+  rows: [],
+  isLive: false,
+  currency: "USD",
+  year: "ALL",
+  month: "ALL",
+  account: "ALL",
+  excludedAccounts: new Set(),
+  scope: "ALL", // ALL | INGRESO | GASTO
+  evoMode: "12M", // 12M | YEAR
+  macro: "",
+  cat: "",
+  tag: "",
+  hierType: "GASTO",
+  search: ""
+};
 
-    const PALETTE = [
-      '#635bff', '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
-      '#8b5cf6', '#f43f5e', '#14b8a6', '#eab308', '#3b82f6'
-    ];
+let charts = { evo: null, macro: null, hier: null };
 
-    // Datos iniciales de respaldo para renderizado inmediato y completo
-    const SAMPLE_CSV_TEXT = `Fecha,Cuenta,Importe,Moneda,Descripción,Categoria,Etiqueta,Tipo,Macro_Categoria,TC_Aplicado,Monto_USD
-2025-03-10,Banco Galicia,4200,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4200
-2025-03-15,Banco Galicia,1150,USD,Alquiler Departamento,"Departamento Centro\nExpensas incluidas",Vivienda,GASTO,Vivienda y Servicios,1,1150
-2025-04-08,Banco Galicia,4250,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4250
-2025-04-14,Mercado Pago,620,USD,Supermercado y Almacén,Supermercado,Compras Mes,GASTO,Alimentación y Hogar,1,620
-2025-05-12,Banco Galicia,4300,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4300
-2025-05-19,Visa Signature,490,USD,Vuelo y Hotel Escapada,Viajes,Turismo,GASTO,Ocio y Viajes,1,490
-2025-06-11,Banco Galicia,4350,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4350
-2025-06-20,Banco Galicia,1180,USD,Alquiler Departamento,Vivienda,Alquiler,GASTO,Vivienda y Servicios,1,1180
-2025-07-10,Banco Galicia,4400,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4400
-2025-07-22,Efectivo USD,310,USD,Chequeo Médico y Farmacia,Salud,Médicos,GASTO,Salud y Bienestar,1,310
-2025-08-10,Banco Galicia,4450,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4450
-2025-08-18,Mercado Pago,580,USD,Compras Hogar y Cocina,Hogar,Equipamiento,GASTO,Alimentación y Hogar,1,580
-2025-09-10,Banco Galicia,4500,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4500
-2025-09-25,Visa Signature,410,USD,Restaurantes y Salidas,Gastronomía,Salidas,GASTO,Ocio y Viajes,1,410
-2025-10-10,Banco Galicia,4600,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4600
-2025-10-15,Banco Galicia,1200,USD,Alquiler Departamento,Vivienda,Alquiler,GASTO,Vivienda y Servicios,1,1200
-2025-11-10,Banco Galicia,4750,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,4750
-2025-11-21,Mercado Pago,690,USD,Supermercado y Feria,Supermercado,Compras Mes,GASTO,Alimentación y Hogar,1,690
-2025-12-10,Banco Galicia,5600,USD,Salario + Bono Anual,Honorarios,Bono,INGRESO,Ingresos Activos,1,5600
-2025-12-16,Banco Galicia,1250,USD,Alquiler + Servicios,Vivienda,Alquiler,GASTO,Vivienda y Servicios,1,1250
-2025-12-23,Visa Signature,740,USD,Regalos y Fiestas,Compras Personales,Regalos,GASTO,Estilo de Vida y Compras,1,740
-2026-01-10,Banco Galicia,5100,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,5100
-2026-01-15,Banco Galicia,1260,USD,Alquiler Departamento,Vivienda,Alquiler,GASTO,Vivienda y Servicios,1,1260
-2026-01-24,Mercado Pago,640,USD,Supermercado Mensual,Supermercado,Compras Mes,GASTO,Alimentación y Hogar,1,640
-2026-02-10,Banco Galicia,5275,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,5275
-2026-02-15,Banco Galicia,1310,USD,Alquiler y Luz/Internet,Vivienda,Alquiler,GASTO,Vivienda y Servicios,1,1310
-2026-02-19,Visa Signature,385,USD,Gimnasio y Nutrición,Salud,Bienestar,GASTO,Salud y Bienestar,1,385
-2026-03-10,Banco Galicia,5350,USD,Salario Mensual Consultoría,Honorarios,Consultoría,INGRESO,Ingresos Activos,1,5350
-2026-03-16,Mercado Pago,710,USD,Supermercado y Almacén,Supermercado,Compras Mes,GASTO,Alimentación y Hogar,1,710
-2026-03-22,Efectivo USD,290,USD,Indumentaria y Calzado,Indumentaria,Ropa,GASTO,Estilo de Vida y Compras,1,290`;
-
-    // =========================================================================
-    // ESTADO GLOBAL DE LA APLICACIÓN
-    // =========================================================================
-    const state = {
-      transactions: [],
-      years: [],
-      sortedMonths: [],
-      rolling12Months: [],
-      latestMonth: '',
-      latestYear: '',
-      selectedYear: '',
-      selectedMonth: 'ALL',
-      excludedAccounts: [],
-      currency: 'USD',
-      analysisMode: 'GASTO',
-      chartWindow: '12M',
-      activeTab: 'VISUAL',
-      selectedMacro: null,
-      selectedCategoria: null,
-      selectedEtiqueta: null,
-      isLiveSource: false,
-      charts: {
-        evolution: null,
-        macroDonut: null,
-        categoryBar: null
-      }
-    };
-
-    // =========================================================================
-    // UTILIDADES Y PARSER RFC-4180 CSV
-    // =========================================================================
-    function escapeHtml(str) {
-      return String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+/* ---------- CSV PARSER (RFC-4180) ---------- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i + 1];
+    if (inQuotes) {
+      if (ch === '"' && next === '"') { cell += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { cell += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(cell); cell = ""; }
+      else if (ch === '' && next === '
+') { row.push(cell); rows.push(row); row = []; cell = ""; i++; }
+      else if (ch === '
+' || ch === '') { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else { cell += ch; }
     }
+  }
+  if (cell.length > 0 || row.length > 0) { row.push(cell); rows.push(row); }
+  return rows;
+}
 
-    function escapeJs(str) {
-      return String(str ?? '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/\n/g, ' ');
+function normHeader(h) {
+  return String(h || "").trim().toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_");
+}
+
+function parseNum(val) {
+  if (typeof val === "number") return isFinite(val) ? val : 0;
+  let s = String(val || "").trim();
+  if (!s) return 0;
+  s = s.replace(/[US$ARS\s]/gi, "");
+  if (s.includes(",") && s.includes(".")) {
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (s.includes(",")) {
+    const parts = s.split(",");
+    if (parts[1] && parts[1].length <= 2) s = s.replace(",", ".");
+    else s = s.replace(/,/g, "");
+  }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+}
+
+function parseDateISO(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m) {
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (y >= 2000 && mo >= 1 && mo <= 12) return { y, mo, d, iso: `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`, ym: `${y}-${String(mo).padStart(2,"0")}` };
+  }
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (m) {
+    const d = +m[1], mo = +m[2], y = +m[3];
+    if (y >= 2000 && mo >= 1 && mo <= 12) return { y, mo, d, iso: `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`, ym: `${y}-${String(mo).padStart(2,"0")}` };
+  }
+  return null;
+}
+
+function mapCsvRows(matrix) {
+  if (!matrix || matrix.length < 2) return [];
+  const headers = matrix[0].map(normHeader);
+  const idx = (candidates) => {
+    for (const c of candidates) {
+      const i = headers.findIndex(h => h === c || h.includes(c));
+      if (i !== -1) return i;
     }
+    return -1;
+  };
 
-    function parseNum(val) {
-      if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
-      if (!val) return 0;
-      const clean = String(val)
-        .trim()
-        .replace(/US\$|\$|USD|ARS/gi, '')
-        .replace(/\s+/g, '');
-      if (!clean) return 0;
-      // Soporta formato 1.234,56 o 1,234.56 o 1234.56
-      if (clean.includes(',') && clean.includes('.')) {
-        const lastComma = clean.lastIndexOf(',');
-        const lastDot = clean.lastIndexOf('.');
-        const normalized = lastComma > lastDot
-          ? clean.replace(/\./g, '').replace(',', '.')
-          : clean.replace(/,/g, '');
-        const n = Number(normalized);
-        return Number.isFinite(n) ? n : 0;
+  const iFecha = idx(["fecha", "date"]);
+  const iTipo = idx(["tipo", "type"]);
+  const iCuenta = idx(["cuenta", "medio", "account"]);
+  const iMacro = idx(["macro_categoria", "macrocategoria", "macro"]);
+  const iCat = idx(["categoria", "category"]);
+  const iTag = idx(["etiqueta", "tag", "subcategoria"]);
+  const iDesc = idx(["descripcion", "detalle", "concepto", "description"]);
+  const iUsd = idx(["monto_usd", "usd", "importe_usd"]);
+  const iArs = idx(["monto_ars", "ars", "importe_ars", "monto"]);
+
+  const out = [];
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r];
+    if (!row || !row.length) continue;
+    const d = parseDateISO(row[iFecha]);
+    if (!d) continue;
+
+    const tipoRaw = String(row[iTipo] || "").trim().toUpperCase();
+    // Excluir PATRIMONIAL completamente
+    if (tipoRaw.includes("PATRIMON")) continue;
+    const tipo = tipoRaw.includes("INGRESO") ? "INGRESO" : (tipoRaw.includes("GASTO") ? "GASTO" : "");
+    if (!tipo) continue;
+
+    const usd = iUsd !== -1 ? parseNum(row[iUsd]) : 0;
+    const ars = iArs !== -1 ? parseNum(row[iArs]) : 0;
+    if (usd === 0 && ars === 0) continue;
+
+    out.push({
+      fecha: d.iso,
+      year: d.y,
+      month: d.mo,
+      ym: d.ym,
+      tipo,
+      cuenta: String(row[iCuenta] || "Sin cuenta").trim() || "Sin cuenta",
+      macro: String(row[iMacro] || "Sin Macro-Categoría").trim() || "Sin Macro-Categoría",
+      cat: String(row[iCat] || "Sin Categoría").trim() || "Sin Categoría",
+      tag: String(row[iTag] || "Sin Etiqueta").trim() || "Sin Etiqueta",
+      desc: String(row[iDesc] || "").trim(),
+      usd,
+      ars
+    });
+  }
+  return out;
+}
+
+/* ---------- FORMATTERS ---------- */
+function fmtMoney(val, curr = state.currency) {
+  const n = Number(val) || 0;
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  if (curr === "USD") {
+    return `${sign}US$${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  }
+  return `${sign}$${abs.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+function amt(r) {
+  return state.currency === "USD" ? r.usd : r.ars;
+}
+
+/* ---------- FILTERING & SELECTORS ---------- */
+function populateGlobalSelectors() {
+  const years = [...new Set(state.rows.map(r => r.year))].sort((a, b) => b - a);
+  const selYear = document.getElementById("selYear");
+  const prevYear = state.year;
+  selYear.innerHTML = `<option value="ALL">Todos los años</option>` +
+    years.map((y, idx) => `<option value="${y}">${y}${idx === 0 ? " (Último año)" : ""}</option>`).join("");
+
+  if (prevYear !== "ALL" && years.includes(Number(prevYear))) {
+    state.year = String(prevYear);
+  } else if (years.length > 0 && prevYear === "ALL" && !selYear.dataset.initialized) {
+    state.year = String(years[0]);
+    selYear.dataset.initialized = "1";
+  }
+  selYear.value = state.year;
+
+  // Meses del año EN ORDEN CRONOLÓGICO (1 a 12)
+  const selMonth = document.getElementById("selMonth");
+  const yearLabel = state.year === "ALL" ? "Todos los años" : state.year;
+  selMonth.innerHTML = `<option value="ALL">Todos los meses (${yearLabel})</option>` +
+    MONTH_NAMES.map((name, idx) => `<option value="${idx + 1}">${name}</option>`).join("");
+  selMonth.value = state.month;
+
+  // Cuentas
+  const accounts = [...new Set(state.rows.map(r => r.cuenta))].sort((a, b) => a.localeCompare(b, "es"));
+  const selAccount = document.getElementById("selAccount");
+  selAccount.innerHTML = `<option value="ALL">Todas las cuentas</option>` +
+    accounts.map(c => `<option value="${c}">${c}</option>`).join("");
+  if (state.account !== "ALL" && !accounts.includes(state.account)) state.account = "ALL";
+  selAccount.value = state.account;
+
+  // Multi-exclude accounts
+  const excludeList = document.getElementById("excludeList");
+  excludeList.innerHTML = accounts.map(c => {
+    const checked = state.excludedAccounts.has(c) ? "checked" : "";
+    return `<label class="multi-item"><input type="checkbox" value="${c.replace(/"/g, "&quot;")}" ${checked}><span>${c}</span></label>`;
+  }).join("");
+  excludeList.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) state.excludedAccounts.add(cb.value);
+      else state.excludedAccounts.delete(cb.value);
+      updateExcludeLabel();
+      renderAll();
+    });
+  });
+  updateExcludeLabel();
+}
+
+function updateExcludeLabel() {
+  const n = state.excludedAccounts.size;
+  const el = document.getElementById("excludeLabel");
+  if (n === 0) el.textContent = "Ninguna excluida";
+  else if (n === 1) el.textContent = `1 excluida: ${[...state.excludedAccounts][0]}`;
+  else el.textContent = `${n} cuentas excluidas`;
+}
+
+function getBaseFilteredRows(ignorePeriod = false) {
+  return state.rows.filter(r => {
+    if (state.account !== "ALL" && r.cuenta !== state.account) return false;
+    if (state.excludedAccounts.has(r.cuenta)) return false;
+    if (state.scope !== "ALL" && r.tipo !== state.scope) return false;
+    if (!ignorePeriod) {
+      if (state.year !== "ALL" && r.year !== Number(state.year)) return false;
+      if (state.month !== "ALL" && r.month !== Number(state.month)) return false;
+    }
+    return true;
+  });
+}
+
+function getPeriodAndAccountSummary() {
+  let periodStr = "";
+  if (state.year === "ALL" && state.month === "ALL") periodStr = "Todos los períodos";
+  else if (state.year !== "ALL" && state.month === "ALL") periodStr = `Año ${state.year} (Todos los meses)`;
+  else if (state.year === "ALL" && state.month !== "ALL") periodStr = `${MONTH_NAMES[Number(state.month) - 1]} (Todos los años)`;
+  else periodStr = `${MONTH_NAMES[Number(state.month) - 1]} ${state.year}`;
+
+  let accStr = state.account === "ALL" ? "Todas las cuentas" : state.account;
+  if (state.excludedAccounts.size > 0) {
+    accStr += ` (Excluidas: ${[...state.excludedAccounts].join(", ")})`;
+  }
+  return `Período: ${periodStr} • Cuentas: ${accStr}`;
+}
+
+/* ---------- HIERARCHY SELECTORS ---------- */
+function syncHierarchySelectors(rows) {
+  if (state.scope === "INGRESO") state.hierType = "INGRESO";
+  else if (state.scope === "GASTO") state.hierType = "GASTO";
+  document.getElementById("selHierType").value = state.hierType;
+  document.getElementById("selHierType").disabled = (state.scope !== "ALL");
+
+  const typedRows = rows.filter(r => r.tipo === state.hierType);
+
+  const macros = [...new Set(typedRows.map(r => r.macro))].sort((a, b) => a.localeCompare(b, "es"));
+  if (state.macro && !macros.includes(state.macro)) { state.macro = ""; state.cat = ""; state.tag = ""; }
+  const selMacro = document.getElementById("selMacro");
+  selMacro.innerHTML = `<option value="">Todas las Macro-Categorías</option>` +
+    macros.map(m => `<option value="${m}">${m}</option>`).join("");
+  selMacro.value = state.macro;
+
+  const macroRows = state.macro ? typedRows.filter(r => r.macro === state.macro) : typedRows;
+  const cats = [...new Set(macroRows.map(r => r.cat))].sort((a, b) => a.localeCompare(b, "es"));
+  if (state.cat && !cats.includes(state.cat)) { state.cat = ""; state.tag = ""; }
+  const selCat = document.getElementById("selCat");
+  selCat.innerHTML = `<option value="">Todas las Categorías</option>` +
+    cats.map(c => `<option value="${c}">${c}</option>`).join("");
+  selCat.value = state.cat;
+
+  const catRows = state.cat ? macroRows.filter(r => r.cat === state.cat) : macroRows;
+  const tags = [...new Set(catRows.map(r => r.tag))].sort((a, b) => a.localeCompare(b, "es"));
+  if (state.tag && !tags.includes(state.tag)) { state.tag = ""; }
+  const selTag = document.getElementById("selTag");
+  selTag.innerHTML = `<option value="">Todas las Etiquetas</option>` +
+    tags.map(t => `<option value="${t}">${t}</option>`).join("");
+  selTag.value = state.tag;
+}
+
+/* ---------- RENDER FUNCTIONS ---------- */
+function renderAll() {
+  const rows = getBaseFilteredRows(false);
+  const metaText = getPeriodAndAccountSummary();
+
+  document.getElementById("badgeCurrency").textContent = state.currency;
+  document.getElementById("pillCount").textContent = `${rows.length.toLocaleString("es-AR")} registros`;
+  document.getElementById("metaHierarchy").textContent = metaText;
+  document.getElementById("metaBalance").textContent = metaText;
+  document.getElementById("metaTx").textContent = metaText;
+
+  // KPIs
+  let ing = 0, gas = 0, ingOps = 0, gasOps = 0;
+  rows.forEach(r => {
+    const v = amt(r);
+    if (r.tipo === "INGRESO") { ing += v; ingOps++; }
+    else if (r.tipo === "GASTO") { gas += v; gasOps++; }
+  });
+  const neto = ing - gas;
+  const margin = ing > 0 ? ((neto / ing) * 100).toFixed(1) : "0.0";
+
+  document.getElementById("kpiIngresos").textContent = state.scope === "GASTO" ? "—" : fmtMoney(ing);
+  document.getElementById("kpiIngOps").textContent = `${ingOps.toLocaleString("es-AR")} ops`;
+  document.getElementById("kpiGastos").textContent = state.scope === "INGRESO" ? "—" : fmtMoney(gas);
+  document.getElementById("kpiGasOps").textContent = `${gasOps.toLocaleString("es-AR")} ops`;
+
+  const elNeto = document.getElementById("kpiNeto");
+  if (state.scope !== "ALL") {
+    elNeto.textContent = "—";
+    elNeto.className = "kpi-val";
+    document.getElementById("kpiMarginBadge").textContent = "Vista filtrada";
+  } else {
+    elNeto.textContent = fmtMoney(neto);
+    elNeto.className = "kpi-val " + (neto >= 0 ? "pos" : "neg");
+    document.getElementById("kpiMarginBadge").textContent = `${margin}% margen`;
+  }
+
+  renderEvolutionChart();
+  renderDonutChart(rows);
+  syncHierarchySelectors(rows);
+  renderHierarchySection(rows);
+  renderBalanceTable(rows);
+  renderTransactionsTable(rows);
+}
+
+function renderEvolutionChart() {
+  const allUnfilteredPeriod = getBaseFilteredRows(true);
+  const allYms = [...new Set(allUnfilteredPeriod.map(r => r.ym))].sort();
+  const lastYm = allYms[allYms.length - 1] || "2026-01";
+
+  let targetYms = [];
+  if (state.evoMode === "12M") {
+    const [ly, lm] = lastYm.split("-").map(Number);
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(ly, lm - 1 - i, 1);
+      targetYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    document.getElementById("pillWindow").textContent = `Ventana 12M: ${targetYms[0]} a ${targetYms[11]}`;
+    document.getElementById("evoSubtitle").textContent = `Últimos 12 meses anclados al último mes disponible (${lastYm})`;
+  } else {
+    const y = state.year === "ALL" ? Number(lastYm.split("-")[0]) : Number(state.year);
+    for (let m = 1; m <= 12; m++) targetYms.push(`${y}-${String(m).padStart(2, "0")}`);
+    document.getElementById("pillWindow").textContent = `Año calendario: ${y}`;
+    document.getElementById("evoSubtitle").textContent = `Evolución mensual Enero – Diciembre ${y}`;
+  }
+
+  const map = {};
+  targetYms.forEach(ym => map[ym] = { ing: 0, gas: 0 });
+  allUnfilteredPeriod.forEach(r => {
+    if (map[r.ym]) {
+      if (r.tipo === "INGRESO") map[r.ym].ing += amt(r);
+      else if (r.tipo === "GASTO") map[r.ym].gas += amt(r);
+    }
+  });
+
+  const labels = targetYms.map(ym => {
+    const [y, m] = ym.split("-").map(Number);
+    return `${MONTH_SHORT[m - 1]} ${y}`;
+  });
+  const dataIng = targetYms.map(ym => map[ym].ing);
+  const dataGas = targetYms.map(ym => map[ym].gas);
+  const dataNet = targetYms.map(ym => map[ym].ing - map[ym].gas);
+
+  const datasets = [];
+  if (state.scope === "ALL") {
+    datasets.push(
+      { type: "line", label: "Flujo Neto", data: dataNet, borderColor: "#60a5fa", backgroundColor: "#60a5fa", tension: 0.25, borderWidth: 2.5, pointRadius: 3, order: 1 },
+      { type: "bar", label: "Ingresos", data: dataIng, backgroundColor: "rgba(16, 185, 129, 0.8)", borderRadius: 4, order: 2 },
+      { type: "bar", label: "Gastos", data: dataGas, backgroundColor: "rgba(244, 63, 94, 0.8)", borderRadius: 4, order: 3 }
+    );
+  } else if (state.scope === "INGRESO") {
+    datasets.push(
+      { type: "bar", label: "Ingresos", data: dataIng, backgroundColor: "rgba(16, 185, 129, 0.85)", borderRadius: 5 }
+    );
+  } else if (state.scope === "GASTO") {
+    datasets.push(
+      { type: "bar", label: "Gastos", data: dataGas, backgroundColor: "rgba(244, 63, 94, 0.85)", borderRadius: 5 }
+    );
+  }
+
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+
+  if (charts.evo) charts.evo.destroy();
+  charts.evo = new Chart(document.getElementById("chartEvo"), {
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } }
+      },
+      scales: {
+        x: { ticks: { color: textColor }, grid: { display: false } },
+        y: { ticks: { color: textColor, callback: v => fmtMoney(v) }, grid: { color: gridColor } }
       }
-      if (clean.includes(',')) {
-        const parts = clean.split(',');
-        if (parts.length === 2 && parts[1].length <= 2) {
-          const n = Number(clean.replace(',', '.'));
-          return Number.isFinite(n) ? n : 0;
+    }
+  });
+}
+
+function renderDonutChart(rows) {
+  const targetType = state.scope === "INGRESO" ? "INGRESO" : "GASTO";
+  document.getElementById("donutTypeBadge").textContent = targetType === "INGRESO" ? "INGRESOS" : "GASTOS";
+
+  const agg = {};
+  rows.filter(r => r.tipo === targetType).forEach(r => {
+    agg[r.macro] = (agg[r.macro] || 0) + amt(r);
+  });
+  const sorted = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+  const palette = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#64748b"];
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
+
+  if (charts.macro) charts.macro.destroy();
+  charts.macro = new Chart(document.getElementById("chartMacro"), {
+    type: "doughnut",
+    data: {
+      labels: sorted.map(x => x[0]),
+      datasets: [{ data: sorted.map(x => x[1]), backgroundColor: palette, borderWidth: 1 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "62%",
+      onClick: (_, els) => {
+        if (els.length > 0) {
+          const clickedMacro = sorted[els[0].index][0];
+          state.hierType = targetType;
+          state.macro = clickedMacro;
+          state.cat = "";
+          state.tag = "";
+          renderAll();
         }
-        const n = Number(clean.replace(/,/g, ''));
-        return Number.isFinite(n) ? n : 0;
-      }
-      const n = Number(clean);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function parseIsoDate(raw) {
-      if (!raw) return '';
-      const s = String(raw).trim();
-      const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-      if (isoMatch) {
-        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
-      }
-      const latMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
-      if (latMatch) {
-        return `${latMatch[3]}-${latMatch[2].padStart(2, '0')}-${latMatch[1].padStart(2, '0')}`;
-      }
-      return '';
-    }
-
-    // Parser RFC-4180 que respeta campos entre comillas con saltos de línea internos
-    function parseCsvString(text) {
-      const rows = [];
-      let row = [];
-      let field = '';
-      let inQuotes = false;
-      const src = String(text || '').replace(/^\uFEFF/, '');
-
-      for (let i = 0; i < src.length; i++) {
-        const ch = src[i];
-        const next = src[i + 1];
-
-        if (inQuotes) {
-          if (ch === '"' && next === '"') {
-            field += '"';
-            i++;
-          } else if (ch === '"') {
-            inQuotes = false;
-          } else {
-            field += ch;
-          }
-        } else {
-          if (ch === '"') {
-            inQuotes = true;
-          } else if (ch === ',') {
-            row.push(field);
-            field = '';
-          } else if (ch === '\r' && next === '\n') {
-            row.push(field);
-            rows.push(row);
-            row = [];
-            field = '';
-            i++;
-          } else if (ch === '\n' || ch === '\r') {
-            row.push(field);
-            rows.push(row);
-            row = [];
-            field = '';
-          } else {
-            field += ch;
-          }
-        }
-      }
-
-      if (field.length > 0 || row.length > 0) {
-        row.push(field);
-        rows.push(row);
-      }
-
-      if (rows.length < 2) return [];
-      const headers = rows[0].map(h => String(h || '').trim());
-      const records = [];
-
-      for (let r = 1; r < rows.length; r++) {
-        const current = rows[r];
-        if (!current || current.every(cell => String(cell || '').trim() === '')) continue;
-        const obj = {};
-        for (let c = 0; c < headers.length; c++) {
-          obj[headers[c]] = current[c] !== undefined ? current[c] : '';
-        }
-        records.push(obj);
-      }
-      return records;
-    }
-
-    function normalizeTransactions(rawRows) {
-      const list = [];
-      for (const row of rawRows) {
-        const pick = (keys) => {
-          for (const k of keys) {
-            if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-              return row[k];
-            }
-          }
-          return '';
-        };
-
-        const fecha = parseIsoDate(pick(['Fecha', 'fecha', 'FECHA']));
-        if (!fecha) continue;
-
-        const tipoRaw = String(pick(['Tipo', 'tipo', 'TIPO']) || 'GASTO').trim().toUpperCase();
-        const macro = String(pick(['Macro_Categoria', 'Macro_Categoría', 'macro_categoria']) || 'Sin Macro-Categoría').trim();
-
-        // Excluir incondicionalmente movimientos PATRIMONIAL
-        if (tipoRaw === 'PATRIMONIAL' || macro.toLowerCase().includes('patrimonial')) {
-          continue;
-        }
-
-        const tipo = tipoRaw === 'INGRESO' ? 'INGRESO' : 'GASTO';
-        const year = fecha.slice(0, 4);
-        const ym = fecha.slice(0, 7);
-        const cuenta = String(pick(['Cuenta', 'cuenta']) || 'Sin Cuenta').trim();
-        const importe = parseNum(pick(['Importe', 'importe']));
-        const moneda = String(pick(['Moneda', 'moneda']) || 'USD').trim().toUpperCase();
-        const descripcion = String(pick(['Descripción', 'Descripcion', 'descripcion']) || '').trim();
-        const categoria = String(pick(['Categoria', 'Categoría', 'categoria']) || 'Sin Categoría').trim();
-        const etiqueta = String(pick(['Etiqueta', 'etiqueta']) || 'Sin Etiqueta').trim();
-        const tc = parseNum(pick(['TC_Aplicado', 'tc_aplicado']));
-        let montoUsd = parseNum(pick(['Monto_USD', 'monto_usd']));
-
-        if (montoUsd === 0 && importe !== 0) {
-          if (moneda === 'USD') montoUsd = importe;
-          else if (tc > 0) montoUsd = importe / tc;
-        }
-
-        let montoArs = 0;
-        if (moneda === 'ARS') montoArs = importe;
-        else if (moneda === 'USD') montoArs = tc > 1 ? importe * tc : importe * 1200;
-
-        list.push({
-          fecha,
-          year,
-          ym,
-          cuenta,
-          importe,
-          moneda,
-          descripcion,
-          categoria,
-          etiqueta,
-          tipo,
-          macro,
-          tc,
-          montoUsd,
-          montoArs
-        });
-      }
-      return list.sort((a, b) => b.fecha.localeCompare(a.fecha));
-    }
-
-    function formatCurrency(amount, currency = state.currency) {
-      const val = Number.isFinite(amount) ? amount : 0;
-      const sign = val < 0 ? '-' : '';
-      const abs = Math.abs(val);
-      const prefix = currency === 'ARS' ? '$' : 'US$';
-      if (abs >= 1000000) {
-        return `${sign}${prefix}${(abs / 1000000).toFixed(2)}M`;
-      }
-      return `${sign}${prefix}${abs.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-    }
-
-    function formatCurrencyExact(amount, currency = state.currency) {
-      const val = Number.isFinite(amount) ? amount : 0;
-      const sign = val < 0 ? '-' : '';
-      const abs = Math.abs(val);
-      const prefix = currency === 'ARS' ? '$' : 'US$';
-      return `${sign}${prefix}${abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    function formatMonthShort(ym) {
-      if (!ym || ym.length < 7) return ym || '';
-      const y = ym.slice(0, 4);
-      const m = ym.slice(5, 7);
-      return `${MONTH_NAMES_SHORT[m] || m} ${y}`;
-    }
-
-    function formatMonthFull(ym) {
-      if (!ym || ym.length < 7) return ym || '';
-      const y = ym.slice(0, 4);
-      const m = ym.slice(5, 7);
-      return `${MONTH_NAMES_FULL[m] || m} ${y}`;
-    }
-
-    function getTxAmount(tx) {
-      return state.currency === 'ARS' ? tx.montoArs : tx.montoUsd;
-    }
-
-    function showStatusBanner(msg, tone = 'info') {
-      const banner = document.getElementById('statusBanner');
-      const inner = document.getElementById('statusBannerInner');
-      const textEl = document.getElementById('statusBannerText');
-      textEl.textContent = msg;
-
-      inner.className = 'rounded-xl px-4 py-2.5 text-xs font-medium flex items-center justify-between gap-3 border ';
-      if (tone === 'error') {
-        inner.className += 'bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-200';
-      } else if (tone === 'success') {
-        inner.className += 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-200';
-      } else {
-        inner.className += 'bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-200';
-      }
-      banner.classList.remove('hidden');
-    }
-
-    function hideStatusBanner() {
-      document.getElementById('statusBanner').classList.add('hidden');
-    }
-
-    // =========================================================================
-    // TEMA, CONTROLES Y SINCRONIZACIÓN DE DATOS
-    // =========================================================================
-    function initTheme() {
-      const saved = localStorage.getItem(STORAGE_THEME_KEY);
-      if (saved === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
+      },
+      plugins: {
+        legend: { position: "right", labels: { color: textColor, boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtMoney(ctx.parsed)}` } }
       }
     }
+  });
+}
 
-    function toggleThemeMode() {
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem(STORAGE_THEME_KEY, isDark ? 'dark' : 'light');
+function renderHierarchySection(rows) {
+  let filtered = rows.filter(r => r.tipo === state.hierType);
+  if (state.macro) filtered = filtered.filter(r => r.macro === state.macro);
+  if (state.cat) filtered = filtered.filter(r => r.cat === state.cat);
+  if (state.tag) filtered = filtered.filter(r => r.tag === state.tag);
+
+  // Determine grouping level: Macro -> Cat -> Tag -> Descripción
+  let levelKey = "macro", levelTitle = "Macro-Categoría";
+  if (state.macro && !state.cat) { levelKey = "cat"; levelTitle = "Categoría"; }
+  else if (state.macro && state.cat && !state.tag) { levelKey = "tag"; levelTitle = "Etiqueta"; }
+  else if (state.tag) { levelKey = "desc"; levelTitle = "Detalle / Descripción"; }
+
+  document.getElementById("hierColName").textContent = levelTitle;
+  document.getElementById("hierChartTitle").textContent = `Desglose por ${levelTitle} (${state.hierType === "GASTO" ? "Gastos" : "Ingresos"})`;
+
+  // Breadcrumbs
+  const bc = document.getElementById("hierBreadcrumbs");
+  let crumbs = [`<span class="crumb ${!state.macro ? "active" : ""}" data-lvl="0">Todas las Macro-Categorías</span>`];
+  if (state.macro) crumbs.push(`<span>›</span><span class="crumb ${!state.cat ? "active" : ""}" data-lvl="1">${state.macro}</span>`);
+  if (state.cat) crumbs.push(`<span>›</span><span class="crumb ${!state.tag ? "active" : ""}" data-lvl="2">${state.cat}</span>`);
+  if (state.tag) crumbs.push(`<span>›</span><span class="crumb active" data-lvl="3">${state.tag}</span>`);
+  bc.innerHTML = crumbs.join("");
+  bc.querySelectorAll(".crumb").forEach(el => {
+    el.addEventListener("click", () => {
+      const lvl = Number(el.dataset.lvl);
+      if (lvl === 0) { state.macro = ""; state.cat = ""; state.tag = ""; }
+      else if (lvl === 1) { state.cat = ""; state.tag = ""; }
+      else if (lvl === 2) { state.tag = ""; }
+      renderAll();
+    });
+  });
+
+  const agg = {};
+  let total = 0;
+  filtered.forEach(r => {
+    const k = r[levelKey] || "Sin especificar";
+    if (!agg[k]) agg[k] = { sum: 0, ops: 0 };
+    const v = amt(r);
+    agg[k].sum += v;
+    agg[k].ops += 1;
+    total += v;
+  });
+
+  const sorted = Object.entries(agg).sort((a, b) => b[1].sum - a[1].sum);
+
+  // Table
+  const tbody = document.getElementById("tbodyHier");
+  tbody.innerHTML = sorted.map(([name, obj]) => {
+    const pct = total > 0 ? ((obj.sum / total) * 100).toFixed(1) : "0.0";
+    const canDrill = levelKey !== "desc";
+    return `<tr>
+      <td class="${canDrill ? "clickable" : ""}" data-val="${name.replace(/"/g, "&quot;")}">${name}</td>
+      <td class="num">${obj.ops.toLocaleString("es-AR")}</td>
+      <td class="num ${state.hierType === "INGRESO" ? "pos" : "neg"}">${fmtMoney(obj.sum)}</td>
+      <td class="num">${pct}%</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Sin registros para esta selección</td></tr>`;
+
+  tbody.querySelectorAll("td.clickable").forEach(td => {
+    td.addEventListener("click", () => {
+      const val = td.dataset.val;
+      if (levelKey === "macro") { state.macro = val; state.cat = ""; state.tag = ""; }
+      else if (levelKey === "cat") { state.cat = val; state.tag = ""; }
+      else if (levelKey === "tag") { state.tag = val; }
+      renderAll();
+    });
+  });
+
+  // Bar Chart (Top 10)
+  const top10 = sorted.slice(0, 10);
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+
+  if (charts.hier) charts.hier.destroy();
+  charts.hier = new Chart(document.getElementById("chartHier"), {
+    type: "bar",
+    data: {
+      labels: top10.map(x => x[0]),
+      datasets: [{
+        label: levelTitle,
+        data: top10.map(x => x[1].sum),
+        backgroundColor: state.hierType === "INGRESO" ? "rgba(16, 185, 129, 0.8)" : "rgba(59, 130, 246, 0.8)",
+        borderRadius: 5
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => fmtMoney(ctx.parsed.x) } }
+      },
+      scales: {
+        x: { ticks: { color: textColor, callback: v => fmtMoney(v) }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderBalanceTable(rows) {
+  const byYm = {};
+  rows.forEach(r => {
+    if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0 };
+    if (r.tipo === "INGRESO") byYm[r.ym].ing += amt(r);
+    else if (r.tipo === "GASTO") byYm[r.ym].gas += amt(r);
+  });
+
+  // Orden cronológico ascendente o descendente
+  const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
+  const tbody = document.getElementById("tbodyBalance");
+  tbody.innerHTML = yms.map(ym => {
+    const [y, m] = ym.split("-").map(Number);
+    const { ing, gas } = byYm[ym];
+    const net = ing - gas;
+    const margin = ing > 0 ? `${((net / ing) * 100).toFixed(1)}%` : "—";
+    return `<tr>
+      <td><strong>${MONTH_NAMES[m - 1]} ${y}</strong></td>
+      <td class="num pos">${fmtMoney(ing)}</td>
+      <td class="num neg">${fmtMoney(gas)}</td>
+      <td class="num ${net >= 0 ? "pos" : "neg"}">${fmtMoney(net)}</td>
+      <td class="num">${margin}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
+}
+
+function renderTransactionsTable(rows) {
+  const q = state.search.trim().toLowerCase();
+  let list = rows.filter(r => {
+    if (state.macro && r.macro !== state.macro) return false;
+    if (state.cat && r.cat !== state.cat) return false;
+    if (state.tag && r.tag !== state.tag) return false;
+    if (q) {
+      const blob = `${r.fecha} ${r.cuenta} ${r.macro} ${r.cat} ${r.tag} ${r.desc}`.toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    return true;
+  });
+
+  list.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const slice = list.slice(0, 300);
+
+  document.getElementById("tbodyTx").innerHTML = slice.map(r => `<tr>
+    <td>${r.fecha}</td>
+    <td><span class="${r.tipo === "INGRESO" ? "tag-green" : "tag-red"}">${r.tipo}</span></td>
+    <td>${r.cuenta}</td>
+    <td>${r.macro}</td>
+    <td>${r.cat}</td>
+    <td>${r.tag}</td>
+    <td style="max-width:340px; overflow:hidden; text-overflow:ellipsis;" title="${r.desc.replace(/"/g, "&quot;")}">${r.desc}</td>
+    <td class="num ${r.tipo === "INGRESO" ? "pos" : "neg"}">${fmtMoney(amt(r))}</td>
+  </tr>`).join("") || `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No hay transacciones que coincidan con el filtro</td></tr>`;
+}
+
+/* ---------- DATA LOADING ---------- */
+async function loadFromUrl(url) {
+  const statusText = document.getElementById("statusText");
+  const statusDot = document.getElementById("statusDot");
+  statusText.textContent = "Sincronizando con Google Sheets...";
+  try {
+    const sep = url.includes("?") ? "&" : "?";
+    const res = await fetch(`${url}${sep}_ts=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const parsed = mapCsvRows(parseCSV(text));
+    if (parsed.length === 0) throw new Error("El CSV no contiene filas válidas de Ingresos/Gastos.");
+    state.rows = parsed;
+    state.isLive = true;
+    statusDot.classList.add("live");
+    const lastDate = parsed.map(r => r.fecha).sort().pop();
+    statusText.textContent = `En vivo • ${parsed.length.toLocaleString("es-AR")} movimientos (Último: ${lastDate})`;
+    populateGlobalSelectors();
+    renderAll();
+  } catch (err) {
+    statusDot.classList.remove("live");
+    statusText.textContent = `Error al cargar CSV (${err.message}) — usando respaldo local`;
+    if (state.rows.length === 0) {
+      state.rows = DEMO_ROWS;
+      populateGlobalSelectors();
       renderAll();
     }
+  }
+}
 
-    function openCsvModal() {
-      const savedUrl = localStorage.getItem(STORAGE_CSV_URL_KEY) || '';
-      document.getElementById('csvUrlInput').value = savedUrl;
-      document.getElementById('csvModal').classList.remove('hidden');
-    }
+/* ---------- EVENTS ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
 
-    function closeCsvModal() {
-      document.getElementById('csvModal').classList.add('hidden');
-    }
+  document.getElementById("btnTheme").addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(STORAGE_THEME_KEY, next);
+    renderAll();
+  });
 
-    function saveAndSyncCsvUrl() {
-      const url = document.getElementById('csvUrlInput').value.trim();
-      if (!url) {
-        showStatusBanner('Ingresá una URL CSV válida de Google Sheets o cargá un archivo .csv local.', 'error');
-        return;
-      }
-      localStorage.setItem(STORAGE_CSV_URL_KEY, url);
-      closeCsvModal();
-      syncFromGoogleSheets(true);
-    }
-
-    function handleLocalCsvFile(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const parsed = parseCsvString(e.target.result);
-          const normalized = normalizeTransactions(parsed);
-          if (!normalized.length) {
-            showStatusBanner('El archivo CSV no contiene filas válidas de Ingresos o Gastos.', 'error');
-            return;
-          }
-          state.isLiveSource = true;
-          applyDataset(normalized, `Archivo local: ${file.name} (${normalized.length.toLocaleString('es-AR')} mov.)`);
-          closeCsvModal();
-          showStatusBanner(`Cargado "${file.name}" con ${normalized.length.toLocaleString('es-AR')} movimientos.`, 'success');
-        } catch (err) {
-          showStatusBanner(`Error al leer el archivo CSV: ${err.message}`, 'error');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function restoreSampleData() {
-      localStorage.removeItem(STORAGE_CSV_URL_KEY);
-      state.isLiveSource = false;
-      const normalized = normalizeTransactions(parseCsvString(SAMPLE_CSV_TEXT));
-      applyDataset(normalized, 'Datos de respaldo cargados');
-      closeCsvModal();
-      showStatusBanner('Se restauraron los datos de respaldo locales.', 'info');
-    }
-
-    async function syncFromGoogleSheets(showFeedback = false) {
-      const url = (localStorage.getItem(STORAGE_CSV_URL_KEY) || '').trim();
-      if (!url) {
-        state.isLiveSource = false;
-        const normalized = normalizeTransactions(parseCsvString(SAMPLE_CSV_TEXT));
-        applyDataset(normalized, 'Datos de respaldo · Configurá tu URL CSV en "CSV / Sheet"');
-        if (showFeedback) {
-          showStatusBanner('No hay URL CSV configurada. Se mantienen los datos de respaldo activos.', 'info');
-        }
-        return;
-      }
-
-      const icon = document.getElementById('syncIcon');
-      icon.classList.add('animate-spin');
-      try {
-        const sep = url.includes('?') ? '&' : '?';
-        const fetchUrl = `${url}${sep}_ts=${Date.now()}`;
-        const resp = await fetch(fetchUrl, { cache: 'no-store' });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const csvText = await resp.text();
-        const rows = parseCsvString(csvText);
-        const normalized = normalizeTransactions(rows);
-        if (!normalized.length) {
-          throw new Error('No se encontraron registros válidos en el CSV.');
-        }
-        state.isLiveSource = true;
-        applyDataset(normalized, `En vivo · ${normalized.length.toLocaleString('es-AR')} registros sincronizados`);
-        if (showFeedback) {
-          showStatusBanner(`Sincronización exitosa: ${normalized.length.toLocaleString('es-AR')} movimientos cargados.`, 'success');
-        }
-      } catch (err) {
-        // Fallback seguro a datos de respaldo sin romper la UI
-        state.isLiveSource = false;
-        const normalized = normalizeTransactions(parseCsvString(SAMPLE_CSV_TEXT));
-        applyDataset(normalized, 'Respaldo activo (error de conexión con CSV)');
-        if (showFeedback) {
-          showStatusBanner(`No se pudo leer la URL CSV (${err.message}). Se muestran datos de respaldo.`, 'error');
-        }
-      } finally {
-        icon.classList.remove('animate-spin');
-      }
-    }
-
-    function applyDataset(transactions, statusLabel) {
-      state.transactions = transactions;
-
-      const yearSet = new Set();
-      const monthSet = new Set();
-      const accountSet = new Set();
-
-      for (const tx of transactions) {
-        yearSet.add(tx.year);
-        monthSet.add(tx.ym);
-        accountSet.add(tx.cuenta);
-      }
-
-      state.years = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
-      state.sortedMonths = Array.from(monthSet).sort();
-      state.latestMonth = state.sortedMonths.length ? state.sortedMonths[state.sortedMonths.length - 1] : '';
-      state.latestYear = state.years.length ? state.years[0] : '';
-
-      // Ventana móvil de 12 meses anclada al último mes con datos
-      state.rolling12Months = state.sortedMonths.slice(-12);
-      const trailingLabel = state.rolling12Months.length
-        ? `Ventana 12M: ${formatMonthShort(state.rolling12Months[0])} – ${formatMonthShort(state.rolling12Months[state.rolling12Months.length - 1])}`
-        : 'Ventana 12M: --';
-      document.getElementById('badgeTrailingWindow').textContent = trailingLabel;
-
-      // Por defecto selecciona el último año con datos (ej. 2026)
-      if (!state.selectedYear || !state.years.includes(state.selectedYear)) {
-        state.selectedYear = state.latestYear || 'ALL';
-      }
-
-      populateYearSelector();
-      populateMonthSelectorForYear(state.selectedYear);
-
-      // Poblar selector de Cuenta / Medio
-      const sortedAccounts = Array.from(accountSet).sort();
-      const accSelect = document.getElementById('filterAccount');
-      const prevAcc = accSelect.value;
-      accSelect.innerHTML = '<option value="ALL">Todas las cuentas</option>';
-      sortedAccounts.forEach(acc => {
-        const opt = document.createElement('option');
-        opt.value = acc;
-        opt.textContent = acc;
-        accSelect.appendChild(opt);
-      });
-      accSelect.value = accountSet.has(prevAcc) ? prevAcc : 'ALL';
-
-      // Limpiar cuentas excluidas que ya no existan y actualizar menú multi-select
-      state.excludedAccounts = state.excludedAccounts.filter(a => accountSet.has(a));
-      renderExcludeMultiMenu(sortedAccounts);
-
-      // Actualizar badges de estado
-      const modeBadge = document.getElementById('badgeSourceMode');
-      if (state.isLiveSource) {
-        modeBadge.textContent = 'En vivo';
-        modeBadge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25';
-      } else {
-        modeBadge.textContent = 'Demo / Respaldo local';
-        modeBadge.className = 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25';
-      }
-      document.getElementById('syncStatusText').textContent = statusLabel;
-
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
+  document.querySelectorAll("#currencyToggle button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#currencyToggle button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.currency = btn.dataset.curr;
       renderAll();
-    }
+    });
+  });
 
-    function populateYearSelector() {
-      const yearSelect = document.getElementById('filterYear');
-      yearSelect.innerHTML = '';
-      state.years.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y === state.latestYear ? `${y} (Último año)` : y;
-        yearSelect.appendChild(opt);
-      });
-      const allOpt = document.createElement('option');
-      allOpt.value = 'ALL';
-      allOpt.textContent = 'Todos los años';
-      yearSelect.appendChild(allOpt);
-
-      yearSelect.value = state.selectedYear || 'ALL';
-    }
-
-    // Selector de meses: estrictamente los 12 meses calendario (Enero..Diciembre),
-    // habilitando/mostrando solo los meses con datos para el año elegido (o todos si "Todos los años")
-    function populateMonthSelectorForYear(yearVal) {
-      const monthSelect = document.getElementById('filterMonth');
-      const monthsInYear = new Set(
-        state.transactions
-          .filter(tx => yearVal === 'ALL' || tx.year === yearVal)
-          .map(tx => tx.ym.slice(5, 7))
-      );
-
-      monthSelect.innerHTML = '';
-      const allMonthsOpt = document.createElement('option');
-      allMonthsOpt.value = 'ALL';
-      allMonthsOpt.textContent = yearVal === 'ALL' ? 'Todos los meses' : `Todos (${yearVal})`;
-      monthSelect.appendChild(allMonthsOpt);
-
-      Object.entries(MONTH_NAMES_FULL).forEach(([mm, label]) => {
-        const hasData = monthsInYear.has(mm);
-        if (yearVal === 'ALL' || hasData) {
-          const opt = document.createElement('option');
-          opt.value = mm;
-          opt.textContent = label;
-          monthSelect.appendChild(opt);
-        }
-      });
-
-      const validValues = Array.from(monthSelect.options).map(o => o.value);
-      if (!validValues.includes(state.selectedMonth)) {
-        state.selectedMonth = 'ALL';
-      }
-      monthSelect.value = state.selectedMonth;
-    }
-
-    // =========================================================================
-    // EVENTOS DE CONTROLES Y FILTROS
-    // =========================================================================
-    function onYearOrMonthChange() {
-      const yearSelect = document.getElementById('filterYear');
-      const prevYear = state.selectedYear;
-      state.selectedYear = yearSelect.value;
-
-      if (prevYear !== state.selectedYear) {
-        populateMonthSelectorForYear(state.selectedYear);
-      }
-      state.selectedMonth = document.getElementById('filterMonth').value;
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function onFilterChange() {
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function onScopeChange() {
-      const scope = document.getElementById('filterTipoScope').value;
-      if (scope === 'INGRESO') {
-        state.analysisMode = 'INGRESO';
-      } else if (scope === 'GASTO') {
-        state.analysisMode = 'GASTO';
-      }
-      updateAnalysisModeButtons();
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function setCurrency(curr) {
-      state.currency = curr === 'ARS' ? 'ARS' : 'USD';
-      document.getElementById('badgeCurrency').textContent = state.currency;
-
-      const btnUsd = document.getElementById('btnCurrUSD');
-      const btnArs = document.getElementById('btnCurrARS');
-      if (state.currency === 'USD') {
-        btnUsd.className = 'px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-violetAccent-500 text-white shadow-xs';
-        btnArs.className = 'px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
-      } else {
-        btnArs.className = 'px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-violetAccent-500 text-white shadow-xs';
-        btnUsd.className = 'px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
-      }
-      renderAll();
-    }
-
-    function setAnalysisMode(mode) {
-      state.analysisMode = mode === 'INGRESO' ? 'INGRESO' : 'GASTO';
-      const scopeSelect = document.getElementById('filterTipoScope');
-      if (scopeSelect.value !== 'BOTH') {
-        scopeSelect.value = state.analysisMode;
-      }
-      updateAnalysisModeButtons();
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function updateAnalysisModeButtons() {
-      const btnG = document.getElementById('btnModeGASTO');
-      const btnI = document.getElementById('btnModeINGRESO');
-      if (state.analysisMode === 'GASTO') {
-        btnG.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30';
-        btnI.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
-      } else {
-        btnI.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
-        btnG.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
-      }
-    }
-
-    function setChartWindow(win) {
-      state.chartWindow = win === 'ALL' ? 'ALL' : '12M';
-      const b12 = document.getElementById('btnWin12M');
-      const bAll = document.getElementById('btnWinALL');
-      if (state.chartWindow === '12M') {
-        b12.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer bg-violetAccent-500 text-white';
-        bAll.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer text-slate-600 dark:text-slate-300';
-      } else {
-        bAll.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer bg-violetAccent-500 text-white';
-        b12.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer text-slate-600 dark:text-slate-300';
-      }
+  document.querySelectorAll("#evoModeToggle button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#evoModeToggle button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.evoMode = btn.dataset.mode;
       renderEvolutionChart();
-    }
-
-    function setActiveTab(tab) {
-      state.activeTab = tab === 'BALANCE' ? 'BALANCE' : 'VISUAL';
-      const pVis = document.getElementById('panelVISUAL');
-      const pBal = document.getElementById('panelBALANCE');
-      const bVis = document.getElementById('tabBtnVISUAL');
-      const bBal = document.getElementById('tabBtnBALANCE');
-
-      if (state.activeTab === 'VISUAL') {
-        pVis.classList.remove('hidden');
-        pBal.classList.add('hidden');
-        bVis.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap bg-violetAccent-500 text-white shadow-xs';
-        bBal.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-midnight-800';
-      } else {
-        pVis.classList.add('hidden');
-        pBal.classList.remove('hidden');
-        bBal.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap bg-violetAccent-500 text-white shadow-xs';
-        bVis.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-midnight-800';
-      }
-      renderAll();
-    }
-
-    // =========================================================================
-    // MULTI-SELECT EXCLUIR CUENTAS
-    // =========================================================================
-    function renderExcludeMultiMenu(accounts) {
-      const menu = document.getElementById('excludeMultiMenu');
-      if (!accounts.length) {
-        menu.innerHTML = `<div class="px-2.5 py-2 text-xs text-slate-400">Sin cuentas disponibles</div>`;
-      } else {
-        menu.innerHTML = accounts.map(acc => {
-          const checked = state.excludedAccounts.includes(acc);
-          return `
-            <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-midnight-800 cursor-pointer select-none">
-              <input type="checkbox" value="${escapeHtml(acc)}" ${checked ? 'checked' : ''}
-                onchange="toggleExcludedAccount('${escapeJs(acc)}')"
-                class="rounded border-slate-300 dark:border-midnight-600 text-violetAccent-500 focus:ring-violetAccent-500 cursor-pointer" />
-              <span class="truncate text-slate-700 dark:text-slate-200">${escapeHtml(acc)}</span>
-            </label>
-          `;
-        }).join('');
-      }
-      updateExcludeMultiLabel();
-    }
-
-    function updateExcludeMultiLabel() {
-      const label = document.getElementById('excludeMultiLabel');
-      if (!state.excludedAccounts.length) {
-        label.textContent = 'Ninguna excluida';
-      } else if (state.excludedAccounts.length === 1) {
-        label.textContent = `Excl.: ${state.excludedAccounts[0]}`;
-      } else {
-        label.textContent = `${state.excludedAccounts.length} excluidas`;
-      }
-    }
-
-    function toggleExcludeDropdown(e) {
-      e.stopPropagation();
-      document.getElementById('excludeMultiMenu').classList.toggle('hidden');
-    }
-
-    document.addEventListener('click', (e) => {
-      const wrapper = document.getElementById('excludeMultiWrapper');
-      const menu = document.getElementById('excludeMultiMenu');
-      if (wrapper && menu && !wrapper.contains(e.target)) {
-        menu.classList.add('hidden');
-      }
     });
+  });
 
-    function toggleExcludedAccount(acc) {
-      const idx = state.excludedAccounts.indexOf(acc);
-      if (idx > -1) state.excludedAccounts.splice(idx, 1);
-      else state.excludedAccounts.push(acc);
-      updateExcludeMultiLabel();
-      onFilterChange();
+  document.getElementById("selYear").addEventListener("change", e => {
+    state.year = e.target.value;
+    populateGlobalSelectors();
+    renderAll();
+  });
+
+  document.getElementById("selMonth").addEventListener("change", e => {
+    state.month = e.target.value;
+    renderAll();
+  });
+
+  document.getElementById("selAccount").addEventListener("change", e => {
+    state.account = e.target.value;
+    renderAll();
+  });
+
+  document.getElementById("selScope").addEventListener("change", e => {
+    state.scope = e.target.value;
+    renderAll();
+  });
+
+  // Multi-select dropdown
+  const menu = document.getElementById("excludeMenu");
+  document.getElementById("btnExcludeToggle").addEventListener("click", () => menu.classList.toggle("open"));
+  document.getElementById("btnExcludeClose").addEventListener("click", () => menu.classList.remove("open"));
+  document.getElementById("btnExcludeClear").addEventListener("click", () => {
+    state.excludedAccounts.clear();
+    menu.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+    updateExcludeLabel();
+    renderAll();
+  });
+  document.addEventListener("click", e => {
+    if (!document.getElementById("excludeWrap").contains(e.target)) menu.classList.remove("open");
+  });
+
+  // Hierarchy selectors
+  document.getElementById("selMacro").addEventListener("change", e => {
+    state.macro = e.target.value; state.cat = ""; state.tag = ""; renderAll();
+  });
+  document.getElementById("selCat").addEventListener("change", e => {
+    state.cat = e.target.value; state.tag = ""; renderAll();
+  });
+  document.getElementById("selTag").addEventListener("change", e => {
+    state.tag = e.target.value; renderAll();
+  });
+  document.getElementById("selHierType").addEventListener("change", e => {
+    state.hierType = e.target.value; state.macro = ""; state.cat = ""; state.tag = ""; renderAll();
+  });
+  document.getElementById("btnResetHier").addEventListener("click", () => {
+    state.macro = ""; state.cat = ""; state.tag = ""; renderAll();
+  });
+
+  document.getElementById("btnResetFilters").addEventListener("click", () => {
+    state.month = "ALL";
+    state.account = "ALL";
+    state.excludedAccounts.clear();
+    state.scope = "ALL";
+    state.macro = "";
+    state.cat = "";
+    state.tag = "";
+    state.search = "";
+    document.getElementById("selScope").value = "ALL";
+    document.getElementById("txtSearch").value = "";
+    populateGlobalSelectors();
+    renderAll();
+  });
+
+  document.getElementById("txtSearch").addEventListener("input", e => {
+    state.search = e.target.value;
+    renderTransactionsTable(getBaseFilteredRows(false));
+  });
+
+  // Modal CSV
+  const modal = document.getElementById("csvModal");
+  const savedUrl = localStorage.getItem(STORAGE_URL_KEY) || "";
+  document.getElementById("inputCsvUrl").value = savedUrl;
+
+  document.getElementById("btnOpenCsv").addEventListener("click", () => modal.classList.add("open"));
+  document.getElementById("btnCloseModal").addEventListener("click", () => modal.classList.remove("open"));
+  document.getElementById("btnSaveCsvUrl").addEventListener("click", () => {
+    const url = document.getElementById("inputCsvUrl").value.trim();
+    if (url) {
+      localStorage.setItem(STORAGE_URL_KEY, url);
+      modal.classList.remove("open");
+      loadFromUrl(url);
     }
+  });
+  document.getElementById("btnClearSavedUrl").addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_URL_KEY);
+    document.getElementById("inputCsvUrl").value = "";
+  });
+  document.getElementById("btnSync").addEventListener("click", () => {
+    const url = localStorage.getItem(STORAGE_URL_KEY);
+    if (url) loadFromUrl(url);
+    else modal.classList.add("open");
+  });
 
-    // =========================================================================
-    // FILTRADO DE DATOS Y RESUMEN DINÁMICO DE PERÍODO Y CUENTAS
-    // =========================================================================
-    function getFilterContext() {
-      const yearVal = document.getElementById('filterYear').value || 'ALL';
-      const monthVal = document.getElementById('filterMonth').value || 'ALL';
-      const accVal = document.getElementById('filterAccount').value || 'ALL';
-      const scopeVal = document.getElementById('filterTipoScope').value || 'BOTH';
-
-      const yearText = yearVal === 'ALL' ? 'Todos los años' : `Año ${yearVal}`;
-      const monthText = monthVal === 'ALL' ? 'Todos los meses' : (MONTH_NAMES_FULL[monthVal] || monthVal);
-      const periodStr = `${yearText} (${monthText})`;
-
-      const baseAccText = accVal === 'ALL' ? 'Todas las cuentas' : `Cuenta: ${accVal}`;
-      const exclText = state.excludedAccounts.length
-        ? ` · Excluidas: ${state.excludedAccounts.join(', ')}`
-        : '';
-      const accountsStr = `${baseAccText}${exclText}`;
-
-      const scopeMap = {
-        BOTH: 'Ingresos y Gastos',
-        INGRESO: 'Solo Ingresos',
-        GASTO: 'Solo Gastos'
-      };
-
-      return {
-        yearVal,
-        monthVal,
-        accVal,
-        scopeVal,
-        periodStr,
-        accountsStr,
-        scopeStr: scopeMap[scopeVal] || 'Ingresos y Gastos',
-        headerText: `Período: ${periodStr} · Cuentas: ${accountsStr}`
-      };
-    }
-
-    function getFilteredTransactions({ ignoreYear = false, ignoreMonth = false } = {}) {
-      const yearVal = ignoreYear ? 'ALL' : (document.getElementById('filterYear').value || 'ALL');
-      const monthVal = ignoreMonth ? 'ALL' : (document.getElementById('filterMonth').value || 'ALL');
-      const accVal = document.getElementById('filterAccount').value || 'ALL';
-      const scopeVal = document.getElementById('filterTipoScope').value || 'BOTH';
-
-      return state.transactions.filter(tx => {
-        if (tx.tipo === 'PATRIMONIAL') return false;
-        if (scopeVal === 'INGRESO' && tx.tipo !== 'INGRESO') return false;
-        if (scopeVal === 'GASTO' && tx.tipo !== 'GASTO') return false;
-
-        if (yearVal !== 'ALL' && tx.year !== yearVal) return false;
-        if (monthVal !== 'ALL' && tx.ym.slice(5, 7) !== monthVal) return false;
-        if (accVal !== 'ALL' && tx.cuenta !== accVal) return false;
-        if (state.excludedAccounts.includes(tx.cuenta)) return false;
-        return true;
-      });
-    }
-
-    function getActiveBreakdownTransactions(baseTxs) {
-      const scopeVal = document.getElementById('filterTipoScope').value || 'BOTH';
-      if (scopeVal === 'INGRESO') return baseTxs.filter(tx => tx.tipo === 'INGRESO');
-      if (scopeVal === 'GASTO') return baseTxs.filter(tx => tx.tipo === 'GASTO');
-      return baseTxs.filter(tx => tx.tipo === state.analysisMode);
-    }
-
-    // =========================================================================
-    // RENDERIZADO GENERAL
-    // =========================================================================
-    function renderAll() {
-      try {
-        const filtered = getFilteredTransactions();
-        const ctx = getFilterContext();
-
-        document.getElementById('badgeRecordCount').textContent =
-          `${filtered.length.toLocaleString('es-AR')} registros`;
-
-        document.getElementById('miniBalanceContext').textContent = ctx.headerText;
-        document.getElementById('fullBalanceContext').textContent = ctx.headerText;
-        document.getElementById('drillHeaderContext').textContent = ctx.headerText;
-        document.getElementById('level4Context').textContent = ctx.headerText;
-
-        renderKPIs(filtered, ctx);
-        renderEvolutionChart(ctx);
-        renderMacroDonut(filtered);
-        renderBalanceTables(ctx);
-        renderDrillDown(filtered);
-      } catch (err) {
-        showStatusBanner(`Error al renderizar el dashboard: ${err.message}`, 'error');
+  document.getElementById("inputCsvFile").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const parsed = mapCsvRows(parseCSV(ev.target.result));
+      if (parsed.length > 0) {
+        state.rows = parsed;
+        state.isLive = true;
+        document.getElementById("statusDot").classList.add("live");
+        document.getElementById("statusText").textContent = `Archivo local • ${parsed.length.toLocaleString("es-AR")} movimientos`;
+        populateGlobalSelectors();
+        renderAll();
+        modal.classList.remove("open");
       }
-    }
-
-    function renderKPIs(filtered, ctx) {
-      let incomeSum = 0;
-      let expenseSum = 0;
-      let incomeCount = 0;
-      let expenseCount = 0;
-
-      for (const tx of filtered) {
-        const amt = getTxAmount(tx);
-        if (tx.tipo === 'INGRESO') {
-          incomeSum += amt;
-          incomeCount++;
-        } else if (tx.tipo === 'GASTO') {
-          expenseSum += amt;
-          expenseCount++;
-        }
-      }
-
-      const net = incomeSum - expenseSum;
-      const marginPct = incomeSum > 0 ? (net / incomeSum) * 100 : 0;
-
-      document.getElementById('kpiIncomeValue').textContent = formatCurrency(incomeSum);
-      document.getElementById('kpiIncomeCount').textContent = `${incomeCount.toLocaleString('es-AR')} ops`;
-      document.getElementById('kpiIncomeSub').textContent = ctx.periodStr;
-
-      document.getElementById('kpiExpenseValue').textContent = formatCurrency(expenseSum);
-      document.getElementById('kpiExpenseCount').textContent = `${expenseCount.toLocaleString('es-AR')} consumos`;
-      document.getElementById('kpiExpenseSub').textContent = ctx.periodStr;
-
-      const netEl = document.getElementById('kpiNetValue');
-      netEl.textContent = formatCurrency(net);
-      netEl.className = `text-2xl sm:text-3xl font-extrabold mt-2 tabular-nums ${
-        net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-      }`;
-
-      document.getElementById('kpiNetMargin').textContent =
-        `${marginPct >= 0 ? '+' : ''}${marginPct.toFixed(1)}% margen neto`;
-      document.getElementById('kpiNetStatus').textContent =
-        net >= 0 ? 'Superávit operativo' : 'Déficit operativo';
-    }
-
-    // =========================================================================
-    // GRÁFICO EVOLUCIÓN TEMPORAL MENSUAL
-    // - Alcance "Ingresos y Gastos": Flujo Neto, Ingresos y Gastos
-    // - Alcance "Ingresos": Ingresos
-    // - Alcance "Gastos": Gastos
-    // =========================================================================
-    function renderEvolutionChart(ctx) {
-      const isDark = document.documentElement.classList.contains('dark');
-      const gridColor = isDark ? 'rgba(53, 72, 125, 0.28)' : 'rgba(148, 163, 184, 0.25)';
-      const tickColor = isDark ? '#94a3b8' : '#64748b';
-
-      const hasExplicitPeriod = ctx.yearVal !== 'ALL' || ctx.monthVal !== 'ALL';
-      const baseTxs = getFilteredTransactions({
-        ignoreYear: state.chartWindow === '12M' && !hasExplicitPeriod,
-        ignoreMonth: true
-      });
-
-      let monthsList = [];
-      if (state.chartWindow === '12M' && !hasExplicitPeriod) {
-        monthsList = [...state.rolling12Months];
-      } else {
-        const mSet = new Set(baseTxs.map(t => t.ym));
-        if (ctx.yearVal !== 'ALL') {
-          for (let m = 1; m <= 12; m++) {
-            const candidate = `${ctx.yearVal}-${String(m).padStart(2, '0')}`;
-            if (state.sortedMonths.includes(candidate) || mSet.has(candidate)) {
-              mSet.add(candidate);
-            }
-          }
-        }
-        monthsList = Array.from(mSet).sort();
-      }
-
-      const incMap = {};
-      const expMap = {};
-      monthsList.forEach(m => {
-        incMap[m] = 0;
-        expMap[m] = 0;
-      });
-
-      baseTxs.forEach(tx => {
-        if (!monthsList.includes(tx.ym)) return;
-        const amt = getTxAmount(tx);
-        if (tx.tipo === 'INGRESO') incMap[tx.ym] += amt;
-        else if (tx.tipo === 'GASTO') expMap[tx.ym] += amt;
-      });
-
-      const incSeries = monthsList.map(m => Number(incMap[m].toFixed(2)));
-      const expSeries = monthsList.map(m => Number(expMap[m].toFixed(2)));
-      const netSeries = monthsList.map(m => Number((incMap[m] - expMap[m]).toFixed(2)));
-
-      const datasets = [];
-      const legendItems = [];
-      const subtitleEl = document.getElementById('evolutionSubtitle');
-
-      if (ctx.scopeVal === 'BOTH') {
-        subtitleEl.textContent = 'Flujo Neto, Ingresos y Gastos · Serie mensual';
-        datasets.push(
-          {
-            type: 'bar',
-            label: 'Ingresos',
-            data: incSeries,
-            backgroundColor: '#10b981',
-            borderRadius: 4,
-            barPercentage: 0.72,
-            categoryPercentage: 0.65,
-            order: 2
-          },
-          {
-            type: 'bar',
-            label: 'Gastos',
-            data: expSeries,
-            backgroundColor: '#f43f5e',
-            borderRadius: 4,
-            barPercentage: 0.72,
-            categoryPercentage: 0.65,
-            order: 3
-          },
-          {
-            type: 'line',
-            label: 'Flujo Neto',
-            data: netSeries,
-            borderColor: '#635bff',
-            backgroundColor: '#635bff',
-            borderWidth: 2.5,
-            pointRadius: 3.5,
-            pointHoverRadius: 5,
-            tension: 0.25,
-            fill: false,
-            order: 1
-          }
-        );
-        legendItems.push(
-          { color: '#635bff', label: 'Flujo Neto', isLine: true },
-          { color: '#10b981', label: 'Ingresos', isLine: false },
-          { color: '#f43f5e', label: 'Gastos', isLine: false }
-        );
-      } else if (ctx.scopeVal === 'INGRESO') {
-        subtitleEl.textContent = 'Ingresos · Serie mensual';
-        datasets.push({
-          type: 'bar',
-          label: 'Ingresos',
-          data: incSeries,
-          backgroundColor: '#10b981',
-          borderRadius: 5,
-          barPercentage: 0.62,
-          categoryPercentage: 0.7
-        });
-        legendItems.push({ color: '#10b981', label: 'Ingresos', isLine: false });
-      } else {
-        subtitleEl.textContent = 'Gastos · Serie mensual';
-        datasets.push({
-          type: 'bar',
-          label: 'Gastos',
-          data: expSeries,
-          backgroundColor: '#f43f5e',
-          borderRadius: 5,
-          barPercentage: 0.62,
-          categoryPercentage: 0.7
-        });
-        legendItems.push({ color: '#f43f5e', label: 'Gastos', isLine: false });
-      }
-
-      document.getElementById('evolutionLegend').innerHTML = legendItems.map(item => `
-        <span class="inline-flex items-center gap-2">
-          ${item.isLine
-            ? `<span class="w-4 h-0.5 rounded-full inline-block" style="background:${item.color}"></span>`
-            : `<span class="w-3 h-3 rounded-xs inline-block" style="background:${item.color}"></span>`
-          }
-          <span>${escapeHtml(item.label)}</span>
-        </span>
-      `).join('');
-
-      const canvas = document.getElementById('evolutionChart');
-      if (state.charts.evolution) state.charts.evolution.destroy();
-
-      state.charts.evolution = new Chart(canvas.getContext('2d'), {
-        data: {
-          labels: monthsList.map(formatMonthShort),
-          datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: isDark ? '#10172d' : '#0f172a',
-              titleColor: '#f8fafc',
-              bodyColor: '#e2e8f0',
-              borderColor: isDark ? '#24335e' : '#334155',
-              borderWidth: 1,
-              callbacks: {
-                label: (c) => ` ${c.dataset.label}: ${formatCurrencyExact(c.parsed.y, state.currency)}`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: tickColor, font: { size: 10 }, maxRotation: 35, minRotation: 0 }
-            },
-            y: {
-              grid: { color: gridColor },
-              ticks: {
-                color: tickColor,
-                font: { size: 10 },
-                callback: (v) => formatCurrency(v)
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // =========================================================================
-    // DESGLOSE POR MACRO-CATEGORÍA (DONA)
-    // =========================================================================
-    function renderMacroDonut(filtered) {
-      const modeTxs = getActiveBreakdownTransactions(filtered);
-      const effectiveMode = document.getElementById('filterTipoScope').value === 'BOTH'
-        ? state.analysisMode
-        : document.getElementById('filterTipoScope').value;
-
-      const badge = document.getElementById('macroScopeBadge');
-      badge.textContent = effectiveMode === 'INGRESO' ? 'INGRESOS' : 'GASTOS';
-      badge.className = effectiveMode === 'INGRESO'
-        ? 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-        : 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-300';
-
-      const totalsByMacro = {};
-      let total = 0;
-      for (const tx of modeTxs) {
-        const amt = getTxAmount(tx);
-        totalsByMacro[tx.macro] = (totalsByMacro[tx.macro] || 0) + amt;
-        total += amt;
-      }
-
-      const entries = Object.entries(totalsByMacro).sort((a, b) => b[1] - a[1]);
-      const isDark = document.documentElement.classList.contains('dark');
-      const canvas = document.getElementById('macroDonutChart');
-      if (state.charts.macroDonut) state.charts.macroDonut.destroy();
-
-      state.charts.macroDonut = new Chart(canvas.getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: entries.map(e => e[0]),
-          datasets: [{
-            data: entries.map(e => Number(e[1].toFixed(2))),
-            backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length]),
-            borderColor: isDark ? '#10172d' : '#ffffff',
-            borderWidth: 2,
-            hoverOffset: 5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '66%',
-          onClick: (_, elements) => {
-            if (elements && elements.length > 0) {
-              const idx = elements[0].index;
-              if (entries[idx]) {
-                selectMacro(entries[idx][0]);
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: isDark ? '#10172d' : '#0f172a',
-              titleColor: '#f8fafc',
-              bodyColor: '#e2e8f0',
-              callbacks: {
-                label: (c) => {
-                  const val = c.parsed;
-                  const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-                  return ` ${c.label}: ${formatCurrencyExact(val)} (${pct}%)`;
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const legendEl = document.getElementById('macroDonutLegend');
-      if (!entries.length) {
-        legendEl.innerHTML = `<div class="text-xs text-slate-400 py-2">Sin movimientos para los filtros actuales.</div>`;
-        return;
-      }
-
-      legendEl.innerHTML = entries.map(([macro, val], idx) => {
-        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-        const color = PALETTE[idx % PALETTE.length];
-        return `
-          <button type="button" onclick="selectMacro('${escapeJs(macro)}')"
-            class="w-full flex items-center justify-between gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-midnight-800 transition text-left cursor-pointer">
-            <span class="flex items-center gap-2 min-w-0 text-xs text-slate-700 dark:text-slate-200">
-              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${color}"></span>
-              <span class="truncate font-medium">${escapeHtml(macro)}</span>
-            </span>
-            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 tabular-nums shrink-0">
-              ${pct}% · ${formatCurrencyExact(val)}
-            </span>
-          </button>
-        `;
-      }).join('');
-    }
-
-    // =========================================================================
-    // TABLAS DE BALANCE MENSUAL Y FLUJO NETO
-    // =========================================================================
-    function renderBalanceTables(ctx) {
-      const hasExplicitPeriod = ctx.yearVal !== 'ALL' || ctx.monthVal !== 'ALL';
-      const baseTxs = getFilteredTransactions({
-        ignoreYear: !hasExplicitPeriod,
-        ignoreMonth: true
-      });
-
-      let monthsToShow = [];
-      if (ctx.yearVal !== 'ALL' && ctx.monthVal !== 'ALL') {
-        monthsToShow = [`${ctx.yearVal}-${ctx.monthVal}`];
-      } else if (ctx.yearVal !== 'ALL') {
-        const mSet = new Set(baseTxs.filter(t => t.year === ctx.yearVal).map(t => t.ym));
-        monthsToShow = Array.from(mSet).sort();
-      } else if (ctx.monthVal !== 'ALL') {
-        const mSet = new Set(baseTxs.filter(t => t.ym.slice(5, 7) === ctx.monthVal).map(t => t.ym));
-        monthsToShow = Array.from(mSet).sort();
-      } else {
-        monthsToShow = [...state.rolling12Months];
-      }
-
-      const monthAgg = {};
-      monthsToShow.forEach(m => {
-        monthAgg[m] = { income: 0, expense: 0 };
-      });
-
-      baseTxs.forEach(tx => {
-        if (!monthAgg[tx.ym]) return;
-        const amt = getTxAmount(tx);
-        if (tx.tipo === 'INGRESO') monthAgg[tx.ym].income += amt;
-        else if (tx.tipo === 'GASTO') monthAgg[tx.ym].expense += amt;
-      });
-
-      const miniBody = document.getElementById('miniBalanceBody');
-      const fullBody = document.getElementById('fullBalanceBody');
-
-      if (!monthsToShow.length) {
-        const emptyRow = `<tr><td colspan="6" class="py-5 px-3 text-center text-slate-400">Sin datos para el período y cuentas seleccionados.</td></tr>`;
-        miniBody.innerHTML = emptyRow;
-        fullBody.innerHTML = emptyRow;
-        return;
-      }
-
-      let cumulativeNet = 0;
-      const miniRows = [];
-      const fullRows = [];
-
-      for (const ym of monthsToShow) {
-        const inc = monthAgg[ym].income;
-        const exp = monthAgg[ym].expense;
-        const net = inc - exp;
-        cumulativeNet += net;
-        const margin = inc > 0 ? `${((net / inc) * 100).toFixed(1)}%` : '—';
-        const coverage = exp > 0 ? `${((inc / exp) * 100).toFixed(0)}%` : (inc > 0 ? '∞' : '—');
-        const netCls = net >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold';
-        const cumCls = cumulativeNet >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold';
-
-        miniRows.push(`
-          <tr class="hover:bg-slate-50 dark:hover:bg-midnight-800/60 transition">
-            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(formatMonthFull(ym))}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">${formatCurrencyExact(inc)}</td>
-            <td class="py-2.5 px-3 text-right text-rose-600 dark:text-rose-400 font-medium">${formatCurrencyExact(exp)}</td>
-            <td class="py-2.5 px-3 text-right ${netCls}">${formatCurrencyExact(net)}</td>
-            <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300">${margin}</td>
-          </tr>
-        `);
-
-        fullRows.push(`
-          <tr class="hover:bg-slate-50 dark:hover:bg-midnight-800/60 transition">
-            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(formatMonthFull(ym))}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">${formatCurrencyExact(inc)}</td>
-            <td class="py-2.5 px-3 text-right text-rose-600 dark:text-rose-400 font-medium">${formatCurrencyExact(exp)}</td>
-            <td class="py-2.5 px-3 text-right ${netCls}">${formatCurrencyExact(net)}</td>
-            <td class="py-2.5 px-3 text-right text-slate-600 dark:text-slate-300">${coverage}</td>
-            <td class="py-2.5 px-3 text-right ${cumCls}">${formatCurrencyExact(cumulativeNet)}</td>
-          </tr>
-        `);
-      }
-
-      miniBody.innerHTML = miniRows.join('');
-      fullBody.innerHTML = fullRows.join('');
-    }
-
-    // =========================================================================
-    // DRILL-DOWN JERÁRQUICO: MACRO -> CATEGORIA -> ETIQUETA -> TRANSACCIONES
-    // =========================================================================
-    function selectMacro(macro) {
-      state.selectedMacro = state.selectedMacro === macro ? null : macro;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function selectCategoria(cat) {
-      state.selectedCategoria = state.selectedCategoria === cat ? null : cat;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function selectEtiqueta(etq) {
-      state.selectedEtiqueta = state.selectedEtiqueta === etq ? null : etq;
-      renderAll();
-    }
-
-    function resetDrillDown() {
-      state.selectedMacro = null;
-      state.selectedCategoria = null;
-      state.selectedEtiqueta = null;
-      renderAll();
-    }
-
-    function renderDrillDown(filtered) {
-      const modeTxs = getActiveBreakdownTransactions(filtered);
-      const effectiveMode = document.getElementById('filterTipoScope').value === 'BOTH'
-        ? state.analysisMode
-        : document.getElementById('filterTipoScope').value;
-
-      const pill = document.getElementById('drillFlowPill');
-      pill.textContent = effectiveMode === 'INGRESO' ? 'INGRESOS' : 'GASTOS';
-      pill.className = effectiveMode === 'INGRESO'
-        ? 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-        : 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300';
-
-      const hasSelection = Boolean(state.selectedMacro || state.selectedCategoria || state.selectedEtiqueta);
-      document.getElementById('btnResetDrill').classList.toggle('hidden', !hasSelection);
-
-      // Breadcrumb
-      const crumbs = [`<button type="button" onclick="resetDrillDown()" class="font-semibold hover:underline cursor-pointer">Todas las Macro-Categorías</button>`];
-      if (state.selectedMacro) {
-        crumbs.push(`<span>›</span><button type="button" onclick="state.selectedCategoria=null;state.selectedEtiqueta=null;renderAll();" class="font-semibold text-indigo-600 dark:text-indigo-300 hover:underline cursor-pointer">${escapeHtml(state.selectedMacro)}</button>`);
-      }
-      if (state.selectedCategoria) {
-        crumbs.push(`<span>›</span><button type="button" onclick="state.selectedEtiqueta=null;renderAll();" class="font-semibold text-indigo-600 dark:text-indigo-300 hover:underline cursor-pointer">${escapeHtml(state.selectedCategoria)}</button>`);
-      }
-      if (state.selectedEtiqueta) {
-        crumbs.push(`<span>›</span><span class="font-bold text-slate-800 dark:text-slate-100">${escapeHtml(state.selectedEtiqueta)}</span>`);
-      }
-      document.getElementById('drillBreadcrumb').innerHTML = crumbs.join('');
-
-      // Nivel 1: Macro-Categorías
-      const macroTotals = {};
-      let grandTotal = 0;
-      for (const tx of modeTxs) {
-        const amt = getTxAmount(tx);
-        macroTotals[tx.macro] = (macroTotals[tx.macro] || 0) + amt;
-        grandTotal += amt;
-      }
-      const macroSorted = Object.entries(macroTotals).sort((a, b) => b[1] - a[1]);
-      const macroContainer = document.getElementById('macroListContainer');
-
-      if (!macroSorted.length) {
-        macroContainer.innerHTML = `<div class="text-xs text-slate-400 py-3">Sin macro-categorías para este filtro.</div>`;
-      } else {
-        macroContainer.innerHTML = macroSorted.map(([macro, val]) => {
-          const active = state.selectedMacro === macro;
-          const pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : '0.0';
-          return `
-            <button type="button" onclick="selectMacro('${escapeJs(macro)}')"
-              class="w-full p-2.5 rounded-xl border text-left transition cursor-pointer ${
-                active
-                  ? 'border-violetAccent-500 bg-violetAccent-500/10 dark:bg-violetAccent-500/15'
-                  : 'border-slate-200/80 dark:border-midnight-700/80 bg-slate-50/60 dark:bg-midnight-900/50 hover:bg-slate-100 dark:hover:bg-midnight-800'
-              }">
-              <div class="flex items-center justify-between gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
-                <span class="truncate">${escapeHtml(macro)}</span>
-                <span class="tabular-nums shrink-0">${formatCurrencyExact(val)}</span>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 tabular-nums">
-                <span>${pct}% del total</span>
-                <span>${active ? 'Seleccionada' : 'Ver categorías →'}</span>
-              </div>
-            </button>
-          `;
-        }).join('');
-      }
-
-      // Nivel 2: Categorías (filtradas por macro si está seleccionada)
-      const catPool = state.selectedMacro
-        ? modeTxs.filter(tx => tx.macro === state.selectedMacro)
-        : modeTxs;
-
-      const catTotals = {};
-      for (const tx of catPool) {
-        catTotals[tx.categoria] = (catTotals[tx.categoria] || 0) + getTxAmount(tx);
-      }
-      const catSorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-
-      document.getElementById('level2Heading').textContent = state.selectedMacro
-        ? `2. Categorías · ${state.selectedMacro}`
-        : '2. Categorías (Global)';
-      document.getElementById('level2Badge').textContent = `${catSorted.length} categorías`;
-
-      const catContainer = document.getElementById('categoryListContainer');
-      if (!catSorted.length) {
-        catContainer.innerHTML = `<div class="text-xs text-slate-400 py-2">Sin categorías disponibles.</div>`;
-      } else {
-        catContainer.innerHTML = catSorted.map(([cat, val]) => {
-          const active = state.selectedCategoria === cat;
-          return `
-            <button type="button" onclick="selectCategoria('${escapeJs(cat)}')"
-              class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs transition cursor-pointer ${
-                active
-                  ? 'border-violetAccent-500 bg-violetAccent-500/15 font-bold text-indigo-700 dark:text-indigo-200'
-                  : 'border-slate-200/70 dark:border-midnight-700/70 hover:bg-slate-100 dark:hover:bg-midnight-800 text-slate-700 dark:text-slate-200'
-              }">
-              <span class="truncate">${escapeHtml(cat)}</span>
-              <span class="font-semibold tabular-nums shrink-0">${formatCurrencyExact(val)}</span>
-            </button>
-          `;
-        }).join('');
-      }
-
-      renderCategoryBarChart(catSorted.slice(0, 8));
-
-      // Nivel 3: Etiquetas
-      const etqPool = catPool.filter(tx => !state.selectedCategoria || tx.categoria === state.selectedCategoria);
-      const etqTotals = {};
-      for (const tx of etqPool) {
-        etqTotals[tx.etiqueta] = (etqTotals[tx.etiqueta] || 0) + getTxAmount(tx);
-      }
-      const etqSorted = Object.entries(etqTotals).sort((a, b) => b[1] - a[1]);
-
-      document.getElementById('level3Heading').textContent = state.selectedCategoria
-        ? `3. Etiquetas · ${state.selectedCategoria}`
-        : '3. Etiquetas';
-      document.getElementById('level3Badge').textContent = `${etqSorted.length} etiquetas`;
-
-      const etqContainer = document.getElementById('etiquetaListContainer');
-      if (!etqSorted.length) {
-        etqContainer.innerHTML = `<div class="text-xs text-slate-400 py-2">Sin etiquetas disponibles.</div>`;
-      } else {
-        etqContainer.innerHTML = etqSorted.map(([etq, val]) => {
-          const active = state.selectedEtiqueta === etq;
-          return `
-            <button type="button" onclick="selectEtiqueta('${escapeJs(etq)}')"
-              class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs transition cursor-pointer ${
-                active
-                  ? 'border-violetAccent-500 bg-violetAccent-500/15 font-bold text-indigo-700 dark:text-indigo-200'
-                  : 'border-slate-200/70 dark:border-midnight-700/70 hover:bg-slate-100 dark:hover:bg-midnight-800 text-slate-700 dark:text-slate-200'
-              }">
-              <span class="truncate">#${escapeHtml(etq)}</span>
-              <span class="font-semibold tabular-nums shrink-0">${formatCurrencyExact(val)}</span>
-            </button>
-          `;
-        }).join('');
-      }
-
-      // Nivel 4: Transacciones Individuales
-      const txPool = etqPool.filter(tx => !state.selectedEtiqueta || tx.etiqueta === state.selectedEtiqueta);
-      state._currentDrillTransactions = txPool;
-      renderTransactionsTable();
-    }
-
-    function renderCategoryBarChart(topCategories) {
-      const isDark = document.documentElement.classList.contains('dark');
-      const tickColor = isDark ? '#94a3b8' : '#64748b';
-      const gridColor = isDark ? 'rgba(53, 72, 125, 0.25)' : 'rgba(148, 163, 184, 0.2)';
-      const canvas = document.getElementById('categoryBarChart');
-      if (state.charts.categoryBar) state.charts.categoryBar.destroy();
-
-      state.charts.categoryBar = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: topCategories.map(c => c[0]),
-          datasets: [{
-            label: state.currency,
-            data: topCategories.map(c => Number(c[1].toFixed(2))),
-            backgroundColor: '#635bff',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (c) => ` ${formatCurrencyExact(c.parsed.x)}`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: gridColor },
-              ticks: { color: tickColor, font: { size: 9 }, callback: (v) => formatCurrency(v) }
-            },
-            y: {
-              grid: { display: false },
-              ticks: { color: tickColor, font: { size: 10 } }
-            }
-          }
-        }
-      });
-    }
-
-    function renderTransactionsTable() {
-      const pool = state._currentDrillTransactions || [];
-      const q = (document.getElementById('txSearchInput').value || '').trim().toLowerCase();
-
-      const filteredTx = q
-        ? pool.filter(tx =>
-            tx.descripcion.toLowerCase().includes(q) ||
-            tx.cuenta.toLowerCase().includes(q) ||
-            tx.categoria.toLowerCase().includes(q) ||
-            tx.etiqueta.toLowerCase().includes(q) ||
-            tx.macro.toLowerCase().includes(q)
-          )
-        : pool;
-
-      document.getElementById('level4Subheading').textContent =
-        `Mostrando ${Math.min(filteredTx.length, 150).toLocaleString('es-AR')} de ${filteredTx.length.toLocaleString('es-AR')} transacciones`;
-
-      const tbody = document.getElementById('transactionsBody');
-      if (!filteredTx.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-5 px-3 text-center text-slate-400">No hay transacciones individuales para la selección actual.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = filteredTx.slice(0, 150).map(tx => {
-        const amt = getTxAmount(tx);
-        const isInc = tx.tipo === 'INGRESO';
-        const badge = isInc
-          ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">INGRESO</span>`
-          : `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300">GASTO</span>`;
-
-        return `
-          <tr class="hover:bg-slate-50 dark:hover:bg-midnight-800/60 transition">
-            <td class="py-2.5 px-3 font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap">${escapeHtml(tx.fecha)}</td>
-            <td class="py-2.5 px-3 whitespace-nowrap">${badge}</td>
-            <td class="py-2.5 px-3 text-slate-700 dark:text-slate-200 whitespace-nowrap">${escapeHtml(tx.cuenta)}</td>
-            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">
-              <span class="font-medium text-slate-800 dark:text-slate-100">${escapeHtml(tx.macro)}</span>
-              <span class="text-slate-400"> / </span>
-              <span>${escapeHtml(tx.categoria)}</span>
-              <span class="text-slate-400"> / </span>
-              <span class="text-indigo-600 dark:text-indigo-300">#${escapeHtml(tx.etiqueta)}</span>
-            </td>
-            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300 max-w-xs truncate" title="${escapeHtml(tx.descripcion)}">${escapeHtml(tx.descripcion || '—')}</td>
-            <td class="py-2.5 px-3 text-right font-bold whitespace-nowrap ${
-              isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-            }">${formatCurrencyExact(amt)}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // =========================================================================
-    // INICIALIZACIÓN
-    // =========================================================================
-    window.addEventListener('DOMContentLoaded', () => {
-      initTheme();
-      syncFromGoogleSheets(false);
-    });
-  </script>
+    };
+    reader.readAsText(file);
+  });
+
+  // Init
+  if (savedUrl) {
+    loadFromUrl(savedUrl);
+  } else {
+    state.rows = DEMO_ROWS;
+    populateGlobalSelectors();
+    renderAll();
+  }
+});
+</script>
 </body>
 </html>
