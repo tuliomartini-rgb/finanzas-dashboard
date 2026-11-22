@@ -892,17 +892,45 @@ function renderEvolutionChart() {
   const allYms = [...new Set(allUnfilteredPeriod.map(r => r.ym))].sort();
   const lastYm = allYms[allYms.length - 1] || "2026-01";
 
+  let anchorYm = lastYm;
+  const hasSpecificMonth = state.month !== "ALL";
+  const hasSpecificYear = state.year !== "ALL";
+
+  if (hasSpecificMonth && hasSpecificYear) {
+    anchorYm = `${Number(state.year)}-${String(Number(state.month)).padStart(2, "0")}`;
+  } else if (hasSpecificMonth && !hasSpecificYear) {
+    const matchingYms = allYms.filter(ym => Number(ym.split("-")[1]) === Number(state.month));
+    if (matchingYms.length > 0) {
+      anchorYm = matchingYms[matchingYms.length - 1];
+    } else {
+      const [ly] = lastYm.split("-").map(Number);
+      anchorYm = `${ly}-${String(Number(state.month)).padStart(2, "0")}`;
+    }
+  } else if (!hasSpecificMonth && hasSpecificYear) {
+    const yPrefix = `${Number(state.year)}-`;
+    const yearYms = allYms.filter(ym => ym.startsWith(yPrefix));
+    anchorYm = yearYms.length > 0 ? yearYms[yearYms.length - 1] : `${Number(state.year)}-12`;
+  }
+
   let targetYms = [];
-  if (state.evoMode === "12M") {
-    const [ly, lm] = lastYm.split("-").map(Number);
+  if (hasSpecificMonth) {
+    const [ay, am] = anchorYm.split("-").map(Number);
+    for (let i = 12; i >= 0; i--) {
+      const d = new Date(ay, am - 1 - i, 1);
+      targetYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    document.getElementById("pillWindow").textContent = `Ventana 13M (hasta ${anchorYm}): ${targetYms[0]} a ${targetYms[12]}`;
+    document.getElementById("evoSubtitle").textContent = `${anchorYm} y los 12 meses anteriores (sin meses posteriores a ${anchorYm})`;
+  } else if (state.evoMode === "12M") {
+    const [ly, lm] = anchorYm.split("-").map(Number);
     for (let i = 11; i >= 0; i--) {
       const d = new Date(ly, lm - 1 - i, 1);
       targetYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
     document.getElementById("pillWindow").textContent = `Ventana 12M: ${targetYms[0]} a ${targetYms[11]}`;
-    document.getElementById("evoSubtitle").textContent = `Últimos 12 meses anclados al último mes disponible (${lastYm})`;
+    document.getElementById("evoSubtitle").textContent = `Últimos 12 meses anclados a ${anchorYm}`;
   } else {
-    const y = state.year === "ALL" ? Number(lastYm.split("-")[0]) : Number(state.year);
+    const y = hasSpecificYear ? Number(state.year) : Number(lastYm.split("-")[0]);
     for (let m = 1; m <= 12; m++) targetYms.push(`${y}-${String(m).padStart(2, "0")}`);
     document.getElementById("pillWindow").textContent = `Año calendario: ${y}`;
     document.getElementById("evoSubtitle").textContent = `Evolución mensual Enero – Diciembre ${y}`;
