@@ -475,7 +475,7 @@
       <input type="file" id="inputCsvFile" accept=".csv,text/csv" />
     </div>
     <div class="modal-foot">
-      <button id="btnClearSavedUrl">Borrar URL guardada</button>
+      <button id="btnClearSavedUrl">Restaurar URL por defecto</button>
       <button id="btnCloseModal">Cancelar</button>
       <button class="primary" id="btnSaveCsvUrl">Guardar y Sincronizar</button>
     </div>
@@ -499,6 +499,7 @@ const MONTHS_CHRONOLOGICAL = [
 ];
 const MONTH_NAMES = MONTHS_CHRONOLOGICAL.map(m => m.name);
 const MONTH_SHORT = MONTHS_CHRONOLOGICAL.map(m => m.short);
+const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ9pE21rNJSWfN6MSsSF3XRB20MQ1kFna03gw2agkqm0pDBrmRJpd7XkIZv1H723aJ_lqnoegUQo0W/pub?gid=1&single=true&output=csv";
 const STORAGE_URL_KEY = "finanzas_movimientos_csv_url_v1";
 const STORAGE_THEME_KEY = "finanzas_dashboard_theme_v1";
 
@@ -672,7 +673,7 @@ function amt(r) {
 
 /* ---------- FILTERING & SELECTORS ---------- */
 function renderChronologicalMonthSelect(selMonth, yearLabel, selectedValue) {
-  const orderedMonths = [...MONTH_CHRONOLOGICAL].sort((a, b) => Number(a.num) - Number(b.num));
+  const orderedMonths = [...MONTHS_CHRONOLOGICAL].sort((a, b) => Number(a.num) - Number(b.num));
   selMonth.innerHTML = "";
 
   const allOpt = document.createElement("option");
@@ -1255,8 +1256,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const modal = document.getElementById("csvModal");
-  const savedUrl = localStorage.getItem(STORAGE_URL_KEY) || "";
-  document.getElementById("inputCsvUrl").value = savedUrl;
+  const savedUrl = localStorage.getItem(STORAGE_URL_KEY);
+  const activeUrl = savedUrl || DEFAULT_CSV_URL;
+  document.getElementById("inputCsvUrl").value = activeUrl;
 
   document.getElementById("btnOpenCsv").addEventListener("click", () => modal.classList.add("open"));
   document.getElementById("btnCloseModal").addEventListener("click", () => modal.classList.remove("open"));
@@ -1270,12 +1272,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btnClearSavedUrl").addEventListener("click", () => {
     localStorage.removeItem(STORAGE_URL_KEY);
-    document.getElementById("inputCsvUrl").value = "";
+    document.getElementById("inputCsvUrl").value = DEFAULT_CSV_URL;
+    modal.classList.remove("open");
+    loadFromUrl(DEFAULT_CSV_URL);
   });
   document.getElementById("btnSync").addEventListener("click", () => {
-    const url = localStorage.getItem(STORAGE_URL_KEY);
-    if (url) loadFromUrl(url);
-    else modal.classList.add("open");
+    const url = localStorage.getItem(STORAGE_URL_KEY) || DEFAULT_CSV_URL;
+    loadFromUrl(url);
   });
 
   document.getElementById("inputCsvFile").addEventListener("change", e => {
@@ -1297,8 +1300,8 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  if (savedUrl) {
-    loadFromUrl(savedUrl);
+  if (activeUrl) {
+    loadFromUrl(activeUrl);
   } else {
     state.rows = DEMO_ROWS;
     populateGlobalSelectors();
