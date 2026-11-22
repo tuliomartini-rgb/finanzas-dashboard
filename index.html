@@ -21,6 +21,7 @@
       --red: #f43f5e;
       --red-soft: rgba(244, 63, 94, 0.16);
       --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.16);
       --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
     }
 
@@ -39,6 +40,7 @@
       --red: #e11d48;
       --red-soft: rgba(225, 29, 72, 0.12);
       --amber: #d97706;
+      --amber-soft: rgba(217, 119, 6, 0.12);
       --shadow: 0 6px 18px -4px rgba(15, 23, 42, 0.08);
     }
 
@@ -52,7 +54,7 @@
       transition: background 0.2s, color 0.2s;
     }
 
-    .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .container { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 
     /* Top Header */
     .topbar {
@@ -132,16 +134,17 @@
     .multi-actions button { padding: 3px 8px; font-size: 11px; }
 
     /* KPI Grid */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
     .kpi {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
       padding: 16px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px;
     }
     .kpi-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.4px; }
-    .kpi-val { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .kpi-val { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
     .kpi-sub { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
     .tag-green { background: var(--green-soft); color: var(--green); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
     .tag-red { background: var(--red-soft); color: var(--red); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
+    .tag-amber { background: var(--amber-soft); color: var(--amber); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
 
     /* Charts & Sections */
     .grid-2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; }
@@ -167,6 +170,7 @@
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .pos { color: var(--green); font-weight: 700; }
     .neg { color: var(--red); font-weight: 700; }
+    .pat { color: var(--amber); font-weight: 700; }
     .clickable { cursor: pointer; }
     .clickable:hover { color: var(--primary); text-decoration: underline; }
 
@@ -247,7 +251,21 @@
 
       <div class="field">
         <label for="selMonth">Mes del Año</label>
-        <select id="selMonth"></select>
+        <select id="selMonth" data-sort-mode="chronological">
+          <option value="ALL" data-order="0">Todos los meses</option>
+          <option value="1" data-order="1">01 - Enero</option>
+          <option value="2" data-order="2">02 - Febrero</option>
+          <option value="3" data-order="3">03 - Marzo</option>
+          <option value="4" data-order="4">04 - Abril</option>
+          <option value="5" data-order="5">05 - Mayo</option>
+          <option value="6" data-order="6">06 - Junio</option>
+          <option value="7" data-order="7">07 - Julio</option>
+          <option value="8" data-order="8">08 - Agosto</option>
+          <option value="9" data-order="9">09 - Septiembre</option>
+          <option value="10" data-order="10">10 - Octubre</option>
+          <option value="11" data-order="11">11 - Noviembre</option>
+          <option value="12" data-order="12">12 - Diciembre</option>
+        </select>
       </div>
 
       <div class="field">
@@ -284,19 +302,24 @@
   <!-- KPIs -->
   <section class="kpi-grid">
     <div class="kpi">
-      <div class="kpi-top"><span>TOTAL INGRESOS</span><span class="tag-green">INGRESOS</span></div>
+      <div class="kpi-top"><span>INGRESOS</span><span class="tag-green">INGRESOS</span></div>
       <div class="kpi-val pos" id="kpiIngresos">--</div>
       <div class="kpi-sub"><span id="kpiIngOps">0 ops</span> • <span id="kpiIngMeta">Período seleccionado</span></div>
     </div>
     <div class="kpi">
-      <div class="kpi-top"><span>TOTAL GASTOS</span><span class="tag-red">GASTOS</span></div>
+      <div class="kpi-top"><span>GASTOS</span><span class="tag-red">GASTOS</span></div>
       <div class="kpi-val neg" id="kpiGastos">--</div>
       <div class="kpi-sub"><span id="kpiGasOps">0 ops</span> • <span id="kpiGasMeta">Período seleccionado</span></div>
     </div>
     <div class="kpi">
-      <div class="kpi-top"><span>FLUJO NETO (INGRESOS - GASTOS)</span><span class="badge" id="kpiMarginBadge">0% margen</span></div>
+      <div class="kpi-top"><span>MOVIMIENTOS PATRIMONIALES</span><span class="tag-amber">PATRIMONIAL</span></div>
+      <div class="kpi-val pat" id="kpiPatrimonial">--</div>
+      <div class="kpi-sub"><span id="kpiPatOps">0 ops</span> • <span id="kpiPatMeta">Con signo (+ / -)</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>FLUJO NETO (INGRESOS - GASTOS +- PATRIMONIAL)</span><span class="badge" id="kpiMarginBadge">0% margen</span></div>
       <div class="kpi-val" id="kpiNeto">--</div>
-      <div class="kpi-sub" id="kpiNetoSub">Resultado operativo neto (sin Patrimonial)</div>
+      <div class="kpi-sub" id="kpiNetoSub">Ingresos - Gastos + Patrimonial</div>
     </div>
   </section>
 
@@ -389,7 +412,7 @@
     <div class="sec-head">
       <div>
         <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
-        <div class="sec-sub">Comparativa mensual directa entre Ingresos, Gastos y Flujo Neto</div>
+        <div class="sec-sub">Comparativa mensual entre Ingresos, Gastos, Patrimonial y Flujo Neto</div>
         <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
       </div>
     </div>
@@ -400,6 +423,7 @@
             <th>Mes</th>
             <th class="num">Ingresos</th>
             <th class="num">Gastos</th>
+            <th class="num">Patrimonial</th>
             <th class="num">Flujo Neto</th>
             <th class="num">Margen / Ahorro</th>
           </tr>
@@ -459,24 +483,33 @@
 </div>
 
 <script>
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+const MONTHS_CHRONOLOGICAL = [
+  { num: 1,  code: "01", name: "Enero",      short: "Ene" },
+  { num: 2,  code: "02", name: "Febrero",    short: "Feb" },
+  { num: 3,  code: "03", name: "Marzo",      short: "Mar" },
+  { num: 4,  code: "04", name: "Abril",      short: "Abr" },
+  { num: 5,  code: "05", name: "Mayo",       short: "May" },
+  { num: 6,  code: "06", name: "Junio",      short: "Jun" },
+  { num: 7,  code: "07", name: "Julio",      short: "Jul" },
+  { num: 8,  code: "08", name: "Agosto",     short: "Ago" },
+  { num: 9,  code: "09", name: "Septiembre", short: "Sep" },
+  { num: 10, code: "10", name: "Octubre",    short: "Oct" },
+  { num: 11, code: "11", name: "Noviembre",  short: "Nov" },
+  { num: 12, code: "12", name: "Diciembre",  short: "Dic" }
 ];
-const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const MONTH_NAMES = MONTHS_CHRONOLOGICAL.map(m => m.name);
+const MONTH_SHORT = MONTHS_CHRONOLOGICAL.map(m => m.short);
 const STORAGE_URL_KEY = "finanzas_movimientos_csv_url_v1";
 const STORAGE_THEME_KEY = "finanzas_dashboard_theme_v1";
 
 const DEMO_ROWS = [
+  { fecha: "2026-09-10", year: 2026, month: 9, ym: "2026-09", tipo: "INGRESO", cuenta: "Banco Galicia", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios septiembre", usd: 19079, ars: 22894800 },
+  { fecha: "2026-09-15", year: 2026, month: 9, ym: "2026-09", tipo: "GASTO", cuenta: "Banco Galicia", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas y consumos", usd: 8875, ars: 10650000 },
+  { fecha: "2026-09-20", year: 2026, month: 9, ym: "2026-09", tipo: "PATRIMONIAL", cuenta: "Banco Galicia", macro: "Inversiones", cat: "Plazo Fijo / FCI", tag: "Rescate", desc: "Movimiento patrimonial neto", usd: 0, ars: 0 },
   { fecha: "2026-01-10", year: 2026, month: 1, ym: "2026-01", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios mensuales", usd: 5200, ars: 6240000 },
   { fecha: "2026-01-15", year: 2026, month: 1, ym: "2026-01", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas ordinarias", usd: 620, ars: 744000 },
-  { fecha: "2026-01-22", year: 2026, month: 1, ym: "2026-01", tipo: "GASTO", cuenta: "Amex", macro: "Alimentación y Hogar", cat: "Supermercado", tag: "Jumbo", desc: "Compra semanal", usd: 340, ars: 408000 },
   { fecha: "2026-02-05", year: 2026, month: 2, ym: "2026-02", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios febrero", usd: 5175, ars: 6210000 },
-  { fecha: "2026-02-12", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Servicios", tag: "Luz y Gas", desc: "Edenor + Metrogas", usd: 195, ars: 234000 },
-  { fecha: "2026-02-18", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Mercado Pago", macro: "Ocio y Viajes", cat: "Gastronomía", tag: "Restaurantes", desc: "Cena fin de semana", usd: 165, ars: 198000 },
-  { fecha: "2026-03-08", year: 2026, month: 3, ym: "2026-03", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios marzo", usd: 5400, ars: 6480000 },
-  { fecha: "2026-03-14", year: 2026, month: 3, ym: "2026-03", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Salud y Bienestar", cat: "Medicina Prepaga", tag: "OSDE", desc: "Cuota mensual", usd: 480, ars: 576000 },
-  { fecha: "2026-03-25", year: 2026, month: 3, ym: "2026-03", tipo: "GASTO", cuenta: "Amex", macro: "Estilo de Vida y Compras", cat: "Indumentaria", tag: "Deportes", desc: "Zapatillas running", usd: 210, ars: 252000 }
+  { fecha: "2026-02-12", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Servicios", tag: "Luz y Gas", desc: "Edenor + Metrogas", usd: 195, ars: 234000 }
 ];
 
 let state = {
@@ -487,8 +520,8 @@ let state = {
   month: "ALL",
   account: "ALL",
   excludedAccounts: new Set(),
-  scope: "ALL", // ALL | INGRESO | GASTO
-  evoMode: "12M", // 12M | YEAR
+  scope: "ALL",
+  evoMode: "12M",
   macro: "",
   cat: "",
   tag: "",
@@ -511,10 +544,8 @@ function parseCSV(text) {
     } else {
       if (ch === '"') { inQuotes = true; }
       else if (ch === ',') { row.push(cell); cell = ""; }
-      else if (ch === '' && next === '
-') { row.push(cell); rows.push(row); row = []; cell = ""; i++; }
-      else if (ch === '
-' || ch === '') { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else if (ch === '\r' && next === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; i++; }
+      else if (ch === '\n' || ch === '\r') { row.push(cell); rows.push(row); row = []; cell = ""; }
       else { cell += ch; }
     }
   }
@@ -524,7 +555,7 @@ function parseCSV(text) {
 
 function normHeader(h) {
   return String(h || "").trim().toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "_");
 }
 
@@ -590,9 +621,10 @@ function mapCsvRows(matrix) {
     if (!d) continue;
 
     const tipoRaw = String(row[iTipo] || "").trim().toUpperCase();
-    // Excluir PATRIMONIAL completamente
-    if (tipoRaw.includes("PATRIMON")) continue;
-    const tipo = tipoRaw.includes("INGRESO") ? "INGRESO" : (tipoRaw.includes("GASTO") ? "GASTO" : "");
+    let tipo = "";
+    if (tipoRaw.includes("PATRIMON")) tipo = "PATRIMONIAL";
+    else if (tipoRaw.includes("INGRESO")) tipo = "INGRESO";
+    else if (tipoRaw.includes("GASTO")) tipo = "GASTO";
     if (!tipo) continue;
 
     const usd = iUsd !== -1 ? parseNum(row[iUsd]) : 0;
@@ -628,11 +660,38 @@ function fmtMoney(val, curr = state.currency) {
   return `${sign}$${abs.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
+function fmtSignedMoney(val, curr = state.currency) {
+  const n = Number(val) || 0;
+  if (n > 0) return `+${fmtMoney(n, curr)}`;
+  return fmtMoney(n, curr);
+}
+
 function amt(r) {
   return state.currency === "USD" ? r.usd : r.ars;
 }
 
 /* ---------- FILTERING & SELECTORS ---------- */
+function renderChronologicalMonthSelect(selMonth, yearLabel, selectedValue) {
+  const orderedMonths = [...MONTH_CHRONOLOGICAL].sort((a, b) => Number(a.num) - Number(b.num));
+  selMonth.innerHTML = "";
+
+  const allOpt = document.createElement("option");
+  allOpt.value = "ALL";
+  allOpt.dataset.order = "0";
+  allOpt.textContent = `Todos los meses (${yearLabel})`;
+  selMonth.appendChild(allOpt);
+
+  orderedMonths.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = String(m.num);
+    opt.dataset.order = String(m.num);
+    opt.textContent = `${m.code} - ${m.name}`;
+    selMonth.appendChild(opt);
+  });
+
+  selMonth.value = selectedValue || "ALL";
+}
+
 function populateGlobalSelectors() {
   const years = [...new Set(state.rows.map(r => r.year))].sort((a, b) => b - a);
   const selYear = document.getElementById("selYear");
@@ -648,12 +707,10 @@ function populateGlobalSelectors() {
   }
   selYear.value = state.year;
 
-  // Meses del año EN ORDEN CRONOLÓGICO (1 a 12)
+  // Meses del año EN ORDEN CRONOLÓGICO ESTRICTO (01 - Enero a 12 - Diciembre)
   const selMonth = document.getElementById("selMonth");
   const yearLabel = state.year === "ALL" ? "Todos los años" : state.year;
-  selMonth.innerHTML = `<option value="ALL">Todos los meses (${yearLabel})</option>` +
-    MONTH_NAMES.map((name, idx) => `<option value="${idx + 1}">${name}</option>`).join("");
-  selMonth.value = state.month;
+  renderChronologicalMonthSelect(selMonth, yearLabel, state.month);
 
   // Cuentas
   const accounts = [...new Set(state.rows.map(r => r.cuenta))].sort((a, b) => a.localeCompare(b, "es"));
@@ -688,11 +745,12 @@ function updateExcludeLabel() {
   else el.textContent = `${n} cuentas excluidas`;
 }
 
-function getBaseFilteredRows(ignorePeriod = false) {
+function getBaseFilteredRows(ignorePeriod = false, includePatrimonial = false) {
   return state.rows.filter(r => {
+    if (!includePatrimonial && r.tipo === "PATRIMONIAL") return false;
     if (state.account !== "ALL" && r.cuenta !== state.account) return false;
     if (state.excludedAccounts.has(r.cuenta)) return false;
-    if (state.scope !== "ALL" && r.tipo !== state.scope) return false;
+    if (!includePatrimonial && state.scope !== "ALL" && r.tipo !== state.scope) return false;
     if (!ignorePeriod) {
       if (state.year !== "ALL" && r.year !== Number(state.year)) return false;
       if (state.month !== "ALL" && r.month !== Number(state.month)) return false;
@@ -750,29 +808,33 @@ function syncHierarchySelectors(rows) {
 
 /* ---------- RENDER FUNCTIONS ---------- */
 function renderAll() {
-  const rows = getBaseFilteredRows(false);
+  const rows = getBaseFilteredRows(false, false);
+  const rowsWithPat = getBaseFilteredRows(false, true);
   const metaText = getPeriodAndAccountSummary();
 
   document.getElementById("badgeCurrency").textContent = state.currency;
-  document.getElementById("pillCount").textContent = `${rows.length.toLocaleString("es-AR")} registros`;
+  document.getElementById("pillCount").textContent = `${rowsWithPat.length.toLocaleString("es-AR")} registros`;
   document.getElementById("metaHierarchy").textContent = metaText;
   document.getElementById("metaBalance").textContent = metaText;
   document.getElementById("metaTx").textContent = metaText;
 
-  // KPIs
-  let ing = 0, gas = 0, ingOps = 0, gasOps = 0;
-  rows.forEach(r => {
+  let ing = 0, gas = 0, pat = 0, ingOps = 0, gasOps = 0, patOps = 0;
+  rowsWithPat.forEach(r => {
     const v = amt(r);
     if (r.tipo === "INGRESO") { ing += v; ingOps++; }
     else if (r.tipo === "GASTO") { gas += v; gasOps++; }
+    else if (r.tipo === "PATRIMONIAL") { pat += v; patOps++; }
   });
-  const neto = ing - gas;
+  const neto = ing - gas + pat;
   const margin = ing > 0 ? ((neto / ing) * 100).toFixed(1) : "0.0";
 
   document.getElementById("kpiIngresos").textContent = state.scope === "GASTO" ? "—" : fmtMoney(ing);
   document.getElementById("kpiIngOps").textContent = `${ingOps.toLocaleString("es-AR")} ops`;
   document.getElementById("kpiGastos").textContent = state.scope === "INGRESO" ? "—" : fmtMoney(gas);
   document.getElementById("kpiGasOps").textContent = `${gasOps.toLocaleString("es-AR")} ops`;
+
+  document.getElementById("kpiPatrimonial").textContent = fmtSignedMoney(pat);
+  document.getElementById("kpiPatOps").textContent = `${patOps.toLocaleString("es-AR")} ops`;
 
   const elNeto = document.getElementById("kpiNeto");
   if (state.scope !== "ALL") {
@@ -789,12 +851,12 @@ function renderAll() {
   renderDonutChart(rows);
   syncHierarchySelectors(rows);
   renderHierarchySection(rows);
-  renderBalanceTable(rows);
-  renderTransactionsTable(rows);
+  renderBalanceTable(rowsWithPat);
+  renderTransactionsTable(rowsWithPat);
 }
 
 function renderEvolutionChart() {
-  const allUnfilteredPeriod = getBaseFilteredRows(true);
+  const allUnfilteredPeriod = getBaseFilteredRows(true, false);
   const allYms = [...new Set(allUnfilteredPeriod.map(r => r.ym))].sort();
   const lastYm = allYms[allYms.length - 1] || "2026-01";
 
@@ -913,7 +975,6 @@ function renderHierarchySection(rows) {
   if (state.cat) filtered = filtered.filter(r => r.cat === state.cat);
   if (state.tag) filtered = filtered.filter(r => r.tag === state.tag);
 
-  // Determine grouping level: Macro -> Cat -> Tag -> Descripción
   let levelKey = "macro", levelTitle = "Macro-Categoría";
   if (state.macro && !state.cat) { levelKey = "cat"; levelTitle = "Categoría"; }
   else if (state.macro && state.cat && !state.tag) { levelKey = "tag"; levelTitle = "Etiqueta"; }
@@ -922,7 +983,6 @@ function renderHierarchySection(rows) {
   document.getElementById("hierColName").textContent = levelTitle;
   document.getElementById("hierChartTitle").textContent = `Desglose por ${levelTitle} (${state.hierType === "GASTO" ? "Gastos" : "Ingresos"})`;
 
-  // Breadcrumbs
   const bc = document.getElementById("hierBreadcrumbs");
   let crumbs = [`<span class="crumb ${!state.macro ? "active" : ""}" data-lvl="0">Todas las Macro-Categorías</span>`];
   if (state.macro) crumbs.push(`<span>›</span><span class="crumb ${!state.cat ? "active" : ""}" data-lvl="1">${state.macro}</span>`);
@@ -952,7 +1012,6 @@ function renderHierarchySection(rows) {
 
   const sorted = Object.entries(agg).sort((a, b) => b[1].sum - a[1].sum);
 
-  // Table
   const tbody = document.getElementById("tbodyHier");
   tbody.innerHTML = sorted.map(([name, obj]) => {
     const pct = total > 0 ? ((obj.sum / total) * 100).toFixed(1) : "0.0";
@@ -975,7 +1034,6 @@ function renderHierarchySection(rows) {
     });
   });
 
-  // Bar Chart (Top 10)
   const top10 = sorted.slice(0, 10);
   const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
@@ -1010,27 +1068,28 @@ function renderHierarchySection(rows) {
 function renderBalanceTable(rows) {
   const byYm = {};
   rows.forEach(r => {
-    if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0 };
+    if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0, pat: 0 };
     if (r.tipo === "INGRESO") byYm[r.ym].ing += amt(r);
     else if (r.tipo === "GASTO") byYm[r.ym].gas += amt(r);
+    else if (r.tipo === "PATRIMONIAL") byYm[r.ym].pat += amt(r);
   });
 
-  // Orden cronológico ascendente o descendente
   const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
   const tbody = document.getElementById("tbodyBalance");
   tbody.innerHTML = yms.map(ym => {
     const [y, m] = ym.split("-").map(Number);
-    const { ing, gas } = byYm[ym];
-    const net = ing - gas;
+    const { ing, gas, pat } = byYm[ym];
+    const net = ing - gas + pat;
     const margin = ing > 0 ? `${((net / ing) * 100).toFixed(1)}%` : "—";
     return `<tr>
       <td><strong>${MONTH_NAMES[m - 1]} ${y}</strong></td>
       <td class="num pos">${fmtMoney(ing)}</td>
       <td class="num neg">${fmtMoney(gas)}</td>
+      <td class="num pat">${fmtSignedMoney(pat)}</td>
       <td class="num ${net >= 0 ? "pos" : "neg"}">${fmtMoney(net)}</td>
       <td class="num">${margin}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
+  }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
 }
 
 function renderTransactionsTable(rows) {
@@ -1049,16 +1108,20 @@ function renderTransactionsTable(rows) {
   list.sort((a, b) => b.fecha.localeCompare(a.fecha));
   const slice = list.slice(0, 300);
 
-  document.getElementById("tbodyTx").innerHTML = slice.map(r => `<tr>
-    <td>${r.fecha}</td>
-    <td><span class="${r.tipo === "INGRESO" ? "tag-green" : "tag-red"}">${r.tipo}</span></td>
-    <td>${r.cuenta}</td>
-    <td>${r.macro}</td>
-    <td>${r.cat}</td>
-    <td>${r.tag}</td>
-    <td style="max-width:340px; overflow:hidden; text-overflow:ellipsis;" title="${r.desc.replace(/"/g, "&quot;")}">${r.desc}</td>
-    <td class="num ${r.tipo === "INGRESO" ? "pos" : "neg"}">${fmtMoney(amt(r))}</td>
-  </tr>`).join("") || `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No hay transacciones que coincidan con el filtro</td></tr>`;
+  document.getElementById("tbodyTx").innerHTML = slice.map(r => {
+    const badgeClass = r.tipo === "INGRESO" ? "tag-green" : (r.tipo === "GASTO" ? "tag-red" : "tag-amber");
+    const valClass = r.tipo === "INGRESO" ? "pos" : (r.tipo === "GASTO" ? "neg" : "pat");
+    return `<tr>
+      <td>${r.fecha}</td>
+      <td><span class="${badgeClass}">${r.tipo}</span></td>
+      <td>${r.cuenta}</td>
+      <td>${r.macro}</td>
+      <td>${r.cat}</td>
+      <td>${r.tag}</td>
+      <td style="max-width:340px; overflow:hidden; text-overflow:ellipsis;" title="${r.desc.replace(/"/g, "&quot;")}">${r.desc}</td>
+      <td class="num ${valClass}">${r.tipo === "PATRIMONIAL" ? fmtSignedMoney(amt(r)) : fmtMoney(amt(r))}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No hay transacciones que coincidan con el filtro</td></tr>`;
 }
 
 /* ---------- DATA LOADING ---------- */
@@ -1072,7 +1135,7 @@ async function loadFromUrl(url) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const parsed = mapCsvRows(parseCSV(text));
-    if (parsed.length === 0) throw new Error("El CSV no contiene filas válidas de Ingresos/Gastos.");
+    if (parsed.length === 0) throw new Error("El CSV no contiene filas válidas.");
     state.rows = parsed;
     state.isLive = true;
     statusDot.classList.add("live");
@@ -1142,7 +1205,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAll();
   });
 
-  // Multi-select dropdown
   const menu = document.getElementById("excludeMenu");
   document.getElementById("btnExcludeToggle").addEventListener("click", () => menu.classList.toggle("open"));
   document.getElementById("btnExcludeClose").addEventListener("click", () => menu.classList.remove("open"));
@@ -1156,7 +1218,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.getElementById("excludeWrap").contains(e.target)) menu.classList.remove("open");
   });
 
-  // Hierarchy selectors
   document.getElementById("selMacro").addEventListener("change", e => {
     state.macro = e.target.value; state.cat = ""; state.tag = ""; renderAll();
   });
@@ -1190,10 +1251,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("txtSearch").addEventListener("input", e => {
     state.search = e.target.value;
-    renderTransactionsTable(getBaseFilteredRows(false));
+    renderTransactionsTable(getBaseFilteredRows(false, true));
   });
 
-  // Modal CSV
   const modal = document.getElementById("csvModal");
   const savedUrl = localStorage.getItem(STORAGE_URL_KEY) || "";
   document.getElementById("inputCsvUrl").value = savedUrl;
@@ -1237,7 +1297,6 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  // Init
   if (savedUrl) {
     loadFromUrl(savedUrl);
   } else {
