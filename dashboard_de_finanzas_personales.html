@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finanzas Personales</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            midnight: {
+              950: '#070b18',
+              900: '#0b1021',
+              850: '#10172d',
+              800: '#141c36',
+              750: '#192342',
+              700: '#222f56',
+              600: '#334478',
+            },
+            violetAccent: {
+              500: '#635bff',
+              600: '#5349f2',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html:not(.dark) {
+      color-scheme: light;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #273561;
+      border-radius: 9999px;
+    }
+    html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-midnight-900 dark:text-slate-100 antialiased">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-midnight-700/80 bg-white/90 dark:bg-midnight-900/90 backdrop-blur-md">
+    <div class="max-w-[1480px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- Left: Brand + Currency Pill + Sync Status -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-violetAccent-500 text-white flex items-center justify-center shadow-sm shadow-violetAccent-500/30 shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h7m9-7h-4a2 2 0 000 4h4v-4z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight truncate">Finanzas Personales</h1>
+            <button id="currencyHeaderPill" type="button" onclick="toggleCurrency()" title="Alternar moneda principal USD / ARS"
+              class="px-2 py-0.5 text-[11px] font-bold tracking-wide rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/25 transition cursor-pointer tabular-nums">
+              USD
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+            <span id="statusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+            <span id="syncStatusText" class="truncate">Sincronizado • Cargando datos...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Source Settings + Sincronizar + Theme Toggle -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" onclick="openSourceModal()"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 hover:bg-slate-50 dark:hover:bg-midnight-800 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+          <svg class="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          CSV / Sheet
+        </button>
+
+        <button id="btnSync" type="button" onclick="syncFromGoogleSheets()"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 hover:bg-slate-50 dark:hover:bg-midnight-800 text-slate-800 dark:text-slate-100 transition cursor-pointer">
+          <svg id="syncIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Sincronizar
+        </button>
+
+        <button id="btnThemeToggle" type="button" onclick="toggleTheme()" aria-label="Cambiar tema claro u oscuro"
+          class="w-9 h-9 rounded-lg border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 hover:bg-slate-50 dark:hover:bg-midnight-800 flex items-center justify-center text-slate-700 dark:text-amber-300 transition cursor-pointer">
+          <!-- Sun icon (visible in dark mode) -->
+          <svg id="iconSun" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon icon (visible in light mode) -->
+          <svg id="iconMoon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- GLOBAL FILTERS CARD -->
+    <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-4 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-200/70 dark:border-midnight-700/70">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-slate-700 dark:text-slate-200">
+            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filtros Globales
+          </span>
+          <span id="badgeRecordCount" class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 tabular-nums">
+            0 registros
+          </span>
+          <span id="badgeRollingWindow" class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 dark:bg-midnight-800 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-midnight-700 tabular-nums">
+            Ventana 12M: --
+          </span>
+        </div>
+
+        <!-- Right Controls: Currency Switch + Ingresos/Gastos Toggle -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Currency Selector -->
+          <div class="inline-flex items-center rounded-lg p-0.5 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700">
+            <button id="btnCurrUSD" type="button" onclick="setCurrency('USD')"
+              class="px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-violetAccent-500 text-white">
+              USD
+            </button>
+            <button id="btnCurrARS" type="button" onclick="setCurrency('ARS')"
+              class="px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+              ARS
+            </button>
+          </div>
+
+          <!-- Toggle Gastos vs Ingresos (para análisis de categorías/etiquetas y desglose) -->
+          <div class="inline-flex items-center rounded-lg p-0.5 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700" role="group" aria-label="Alternar Gastos o Ingresos">
+            <button id="btnModeGASTO" type="button" onclick="setAnalysisMode('GASTO')"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+              Gastos
+            </button>
+            <button id="btnModeINGRESO" type="button" onclick="setAnalysisMode('INGRESO')"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-transparent">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Ingresos
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dropdown Filter Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3.5">
+        <div>
+          <label for="filterYear" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Año</label>
+          <select id="filterYear" onchange="onFilterChange()"
+            class="w-full rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
+          </select>
+        </div>
+
+        <div>
+          <label for="filterMonth" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Mes</label>
+          <select id="filterMonth" onchange="onFilterChange()"
+            class="w-full rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
+            <option value="ALL">Todos los meses</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filterAccount" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Cuenta / Medio</label>
+          <select id="filterAccount" onchange="onFilterChange()"
+            class="w-full rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
+            <option value="ALL">Todas las cuentas</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filterExcludeAccount" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Excluir Cuenta</label>
+          <select id="filterExcludeAccount" onchange="onFilterChange()"
+            class="w-full rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
+            <option value="NONE">Ninguna excluida</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filterTipoScope" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Alcance de Tipo</label>
+          <select id="filterTipoScope" onchange="onFilterChange()"
+            class="w-full rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 cursor-pointer">
+            <option value="OPERATIVO" selected>Ingresos y Gastos (sin Patrimonial)</option>
+            <option value="ALL_WITH_PATRIMONIAL">Incluir Patrimonial</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 KPI CARDS ROW -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- KPI 1: TOTAL INGRESOS -->
+      <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Ingresos</p>
+            <p id="kpiIngresosAmount" class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">$0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-500 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span id="kpiIngresosOps" class="px-2 py-0.5 rounded-md font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 tabular-nums">0 ops</span>
+          <span id="kpiIngresosDelta" class="px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-midnight-800 text-slate-600 dark:text-slate-300 tabular-nums">--</span>
+        </div>
+      </div>
+
+      <!-- KPI 2: TOTAL GASTOS -->
+      <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Gastos</p>
+            <p id="kpiGastosAmount" class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">$0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center text-rose-500 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+            </svg>
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span id="kpiGastosOps" class="px-2 py-0.5 rounded-md font-semibold bg-rose-500/15 text-rose-600 dark:text-rose-300 tabular-nums">0 consumos</span>
+          <span id="kpiGastosDelta" class="px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-midnight-800 text-slate-600 dark:text-slate-300 tabular-nums">--</span>
+        </div>
+      </div>
+
+      <!-- KPI 3: FLUJO NETO / SUPERÁVIT -->
+      <div class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Flujo Neto (Ingresos - Gastos)</p>
+            <p id="kpiNetoAmount" class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums">$0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span id="kpiSavingsRate" class="px-2 py-0.5 rounded-md font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 tabular-nums">0.0% flujo neto</span>
+          <span id="kpiNetoStatus" class="px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-midnight-800 text-slate-600 dark:text-slate-300 tabular-nums">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="flex items-center gap-6 border-b border-slate-200/80 dark:border-midnight-700/80 overflow-x-auto no-scrollbar">
+      <button id="tabBtnVisual" type="button" onclick="setActiveTab('VISUAL')"
+        class="pb-3 text-xs sm:text-sm font-semibold border-b-2 border-violetAccent-500 text-slate-900 dark:text-white whitespace-nowrap transition cursor-pointer inline-flex items-center gap-2">
+        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Análisis Visual & Macro-Categorías
+      </button>
+
+      <button id="tabBtnBalance" type="button" onclick="setActiveTab('BALANCE')"
+        class="pb-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 whitespace-nowrap transition cursor-pointer inline-flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        Balance Mensual y Flujo Neto (12M)
+      </button>
+
+      <button id="tabBtnDrill" type="button" onclick="setActiveTab('DRILL')"
+        class="pb-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 whitespace-nowrap transition cursor-pointer inline-flex items-center gap-2">
+        <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10m-10 4h7" />
+        </svg>
+        Drill-Down Categoría / Etiqueta / Movimientos
+      </button>
+    </nav>
+
+    <!-- TAB 1: ANALISIS VISUAL (EVOLUCION MENSUAL + DESGLOSE MACRO-CATEGORIA + DRILLDOWN INTEGRADO) -->
+    <div id="panelVisual" class="space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Left (7 cols): Evolución Temporal Mensual (Últimos 12 meses móviles desde último mes disponible) -->
+        <div class="lg:col-span-7 rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Evolución Temporal Mensual</h2>
+              <p id="evolutionSubtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Últimos 12 meses anclados al último mes disponible • Ingresos, Gastos y Flujo Neto
+              </p>
+            </div>
+            <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-midnight-900 border border-slate-200 dark:border-midnight-700 text-[11px] font-semibold">
+              <button id="btnWindow12M" type="button" onclick="setChartWindow('12M')"
+                class="px-2.5 py-1 rounded-md bg-violetAccent-500 text-white cursor-pointer transition">
+                12 Meses
+              </button>
+              <button id="btnWindowALL" type="button" onclick="setChartWindow('ALL')"
+                class="px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 cursor-pointer transition">
+                Cronológico
+              </button>
+            </div>
+          </div>
+
+          <div class="relative h-[290px] w-full">
+            <canvas id="evolutionChart"></canvas>
+          </div>
+
+          <!-- Legend Footer matching reference -->
+          <div class="mt-4 pt-3 border-t border-slate-200/70 dark:border-midnight-700/70 flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <span class="inline-flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+              Flujo Neto
+            </span>
+            <span class="inline-flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              Ingresos
+            </span>
+            <span class="inline-flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              Gastos
+            </span>
+          </div>
+        </div>
+
+        <!-- Right (5 cols): Desglose por Macro-Categoría (respeta toggle Gastos / Ingresos) -->
+        <div class="lg:col-span-5 rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h2 id="macroBreakdownTitle" class="text-base font-bold text-slate-900 dark:text-white">Desglose por Macro-Categoría</h2>
+              <p id="macroBreakdownSubtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Distribución de gastos por macro-categoría (clic para drill-down)
+              </p>
+            </div>
+            <span id="macroModeBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30">
+              GASTOS
+            </span>
+          </div>
+
+          <div class="relative h-[185px] w-full flex items-center justify-center my-1">
+            <canvas id="macroDonutChart"></canvas>
+          </div>
+
+          <!-- Interactive Macro_Categoria List -->
+          <div id="macroBreakdownList" class="mt-3 space-y-1.5 max-h-[215px] overflow-y-auto custom-scrollbar pr-1">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMEN MENSUAL DE BALANCE E INGRESOS VS GASTOS (Siempre visible en 12M o período) -->
+      <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Resumen Mensual de Balance y Flujo Neto</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Comparativa mensual directa entre Ingresos, Gastos y Flujo Neto (Ingresos - Gastos) en los últimos 12 meses disponibles
+            </p>
+          </div>
+          <button type="button" onclick="setActiveTab('BALANCE')"
+            class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+            Ver tabla completa →
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs tabular-nums">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-midnight-700 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <th class="py-2.5 px-3 font-semibold">Mes</th>
+                <th class="py-2.5 px-3 font-semibold text-right text-emerald-600 dark:text-emerald-400">Ingresos</th>
+                <th class="py-2.5 px-3 font-semibold text-right text-rose-600 dark:text-rose-400">Gastos</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Flujo Neto</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Margen / Ahorro</th>
+              </tr>
+            </thead>
+            <tbody id="miniBalanceBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 2: BALANCE MENSUAL Y FLUJO NETO DETALLADO -->
+    <div id="panelBalance" class="hidden space-y-5">
+      <section class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Balance Mensual y Flujo Neto (Ventana 12 Meses)</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Detalle mes a mes desde el último mes con información disponible, incluyendo cobertura de gastos e ingresos acumulados
+            </p>
+          </div>
+        </div>
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs tabular-nums">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-midnight-700 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-midnight-800/70">
+                <th class="py-3 px-3.5 font-semibold">Mes</th>
+                <th class="py-3 px-3.5 font-semibold text-right">Ops Ingreso</th>
+                <th class="py-3 px-3.5 font-semibold text-right text-emerald-600 dark:text-emerald-400">Ingresos</th>
+                <th class="py-3 px-3.5 font-semibold text-right">Ops Gasto</th>
+                <th class="py-3 px-3.5 font-semibold text-right text-rose-600 dark:text-rose-400">Gastos</th>
+                <th class="py-3 px-3.5 font-semibold text-right">Flujo Neto</th>
+                <th class="py-3 px-3.5 font-semibold text-right">% Ahorro</th>
+                <th class="py-3 px-3.5 font-semibold text-right">Cobertura Gasto</th>
+              </tr>
+            </thead>
+            <tbody id="fullBalanceBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
+            </tbody>
+            <tfoot id="fullBalanceFoot" class="border-t-2 border-slate-200 dark:border-midnight-700 font-bold bg-slate-50/80 dark:bg-midnight-800/80">
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 3 (AND ALWAYS ACCESSIBLE DRILL-DOWN SECTION): MACRO_CATEGORIA -> CATEGORIA -> ETIQUETA -> TRANSACCIONES -->
+    <section id="drilldownSection" class="rounded-2xl border border-slate-200/90 dark:border-midnight-700/90 bg-white dark:bg-midnight-850 p-5 shadow-sm space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 dark:border-midnight-700/70 pb-3.5">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Drill-Down Jerárquico por Macro-Categoría</h2>
+            <span id="drillFlowPill" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300">
+              GASTOS
+            </span>
+          </div>
+          <!-- Breadcrumb Navigation -->
+          <div id="drillBreadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs mt-1.5 text-slate-500 dark:text-slate-400">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <button id="btnResetDrill" type="button" onclick="resetDrillDown()"
+          class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 hover:bg-slate-100 dark:hover:bg-midnight-700 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+          ← Reiniciar selección
+        </button>
+      </div>
+
+      <!-- LEVEL 1 & 2 GRID: Macro_Categoria Selector + Categoria Breakdown & Monthly Trend -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Level 1: Macro_Categoria List -->
+        <div class="lg:col-span-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">1. Macro-Categorías</h3>
+            <span id="drillMacroCount" class="text-[11px] text-slate-400 tabular-nums">0 rubros</span>
+          </div>
+          <div id="drillMacroList" class="space-y-1.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Level 2: Categorías dentro de la Macro_Categoria seleccionada -->
+        <div class="lg:col-span-8 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 id="level2Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                2. Categorías dentro de Macro-Categoría
+              </h3>
+              <p id="level2Subheading" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Seleccioná una categoría para filtrar sus etiquetas
+              </p>
+            </div>
+            <span id="level2TotalBadge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-midnight-800 text-slate-800 dark:text-slate-100 tabular-nums">
+              $0
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Level 2 Bar Chart -->
+            <div class="rounded-xl border border-slate-200/80 dark:border-midnight-700/80 bg-slate-50/60 dark:bg-midnight-900/50 p-3">
+              <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">Distribución por Categoría</p>
+              <div class="relative h-[200px] w-full">
+                <canvas id="categoryBarChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Level 2 Monthly Trend for Selected Macro -->
+            <div class="rounded-xl border border-slate-200/80 dark:border-midnight-700/80 bg-slate-50/60 dark:bg-midnight-900/50 p-3">
+              <p id="macroTrendLabel" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">Evolución Mensual de la Macro-Categoría</p>
+              <div class="relative h-[200px] w-full">
+                <canvas id="macroTrendChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Table -->
+          <div class="overflow-x-auto custom-scrollbar rounded-xl border border-slate-200/80 dark:border-midnight-700/80">
+            <table class="w-full text-left border-collapse text-xs tabular-nums">
+              <thead>
+                <tr class="border-b border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <th class="py-2 px-3 font-semibold">Categoría</th>
+                  <th class="py-2 px-3 font-semibold text-right">Ops</th>
+                  <th class="py-2 px-3 font-semibold text-right">% Macro</th>
+                  <th class="py-2 px-3 font-semibold text-right" id="thCatMonto">Monto USD</th>
+                </tr>
+              </thead>
+              <tbody id="level2CategoryTableBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL 3: ETIQUETAS DENTRO DE LA CATEGORÍA (O MACRO) SELECCIONADA -->
+      <div class="pt-4 border-t border-slate-200/70 dark:border-midnight-700/70 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 id="level3Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              3. Etiquetas
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Hacé clic en una etiqueta para ver abajo el detalle de transacciones individuales
+            </p>
+          </div>
+          <span id="level3Badge" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">0 etiquetas</span>
+        </div>
+
+        <div id="level3EtiquetasGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- LEVEL 4: TRANSACCIONES INDIVIDUALES -->
+      <div class="pt-4 border-t border-slate-200/70 dark:border-midnight-700/70 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 id="level4Heading" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              4. Transacciones Individuales
+            </h3>
+            <p id="level4Subheading" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Mostrando movimientos filtrados por la selección actual
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="txSearchInput" type="text" oninput="renderLevel4Transactions()" placeholder="Buscar descripción o cuenta..."
+              class="rounded-lg border border-slate-200 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-800 px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violetAccent-500/50 w-56 sm:w-64" />
+            <span id="txFilteredCount" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 dark:bg-midnight-800 text-slate-700 dark:text-slate-200 tabular-nums">
+              0 movs
+            </span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar rounded-xl border border-slate-200/80 dark:border-midnight-700/80 max-h-[380px]">
+          <table class="w-full text-left border-collapse text-xs tabular-nums">
+            <thead class="sticky top-0 z-10">
+              <tr class="border-b border-slate-200 dark:border-midnight-700 bg-slate-100 dark:bg-midnight-800 text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <th class="py-2.5 px-3 font-semibold">Fecha</th>
+                <th class="py-2.5 px-3 font-semibold">Cuenta</th>
+                <th class="py-2.5 px-3 font-semibold">Categoría / Etiqueta</th>
+                <th class="py-2.5 px-3 font-semibold">Descripción</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Importe Orig.</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Monto USD</th>
+              </tr>
+            </thead>
+            <tbody id="level4TxTableBody" class="divide-y divide-slate-100 dark:divide-midnight-800">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL PARA URL CSV PUBLICADA O ARCHIVO CSV LOCAL -->
+  <div id="sourceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+    <div class="w-full max-w-xl rounded-2xl border border-slate-200 dark:border-midnight-700 bg-white dark:bg-midnight-850 p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-midnight-700 pb-3">
+        <h3 class="text-base font-bold">Origen de Datos CSV (Google Sheets / Local)</h3>
+        <button type="button" onclick="closeSourceModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <label for="customCsvUrlInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+          URL CSV publicada de la pestaña <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-midnight-800">Movimientos</code>
+        </label>
+        <input id="customCsvUrlInput" type="url"
+          class="w-full rounded-lg border border-slate-300 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-violetAccent-500"
+          placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+          En Google Sheets usá <strong>Archivo &gt; Compartir &gt; Publicar en la web</strong> eligiendo la hoja <strong>Movimientos</strong> en formato <strong>CSV</strong>, o pegá la URL de exportación CSV.
+        </p>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-200 dark:border-midnight-700">
+        <label for="localCsvFileInput" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+          O cargá un archivo <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-midnight-800">.csv</code> exportado desde tu computadora
+        </label>
+        <input id="localCsvFileInput" type="file" accept=".csv,text/csv" onchange="handleLocalCsvFile(event)"
+          class="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violetAccent-500 file:text-white hover:file:bg-violetAccent-600 cursor-pointer" />
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-midnight-700">
+        <button type="button" onclick="resetDefaultCsvUrl()"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-midnight-700 hover:bg-slate-100 dark:hover:bg-midnight-800 cursor-pointer">
+          URL por defecto
+        </button>
+        <button type="button" onclick="saveAndSyncCustomUrl()"
+          class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-violetAccent-500 hover:bg-violetAccent-600 text-white cursor-pointer">
+          Guardar y Sincronizar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CONFIGURACIÓN Y ESTADO
+    // =========================================================================
+    const SPREADSHEET_ID = '1u0O18kMmGIthgnqsLHwWKUgqLilLwRDakg1ZRdzK7B8';
+    const DEFAULT_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Movimientos`;
+    const LS_CSV_URL_KEY = 'finanzas_gsheet_csv_url_v2';
+    const LS_THEME_KEY = 'finanzas_ui_theme_v2';
+
+    const PALETTE = [
+      '#635bff', // Violet / Indigo
+      '#10b981', // Emerald
+      '#f59e0b', // Amber
+      '#ec4899', // Pink / Rose
+      '#06b6d4', // Cyan
+      '#8b5cf6', // Purple
+      '#ef4444', // Red
+      '#14b8a6', // Teal
+      '#3b82f6', // Blue
+      '#a855f7'  // Fuchsia
+    ];
+
+    const state = {
+      transactions: [],
+      sortedMonths: [],         // ['2025-03', ..., '2026-02']
+      rolling12Months: [],      // 12 meses anclados al último mes con datos
+      latestMonth: '',          // 'YYYY-MM'
+      latestYear: '',           // 'YYYY'
+      currency: 'USD',          // 'USD' | 'ARS' (por defecto USD)
+      analysisMode: 'GASTO',    // 'GASTO' | 'INGRESO' (toggle principal de desglose/drilldown)
+      chartWindow: '12M',       // '12M' | 'ALL'
+      activeTab: 'VISUAL',      // 'VISUAL' | 'BALANCE' | 'DRILL'
+      selectedMacro: null,
+      selectedCategoria: null,
+      selectedEtiqueta: null,
+      charts: {
+        evolution: null,
+        macroDonut: null,
+        categoryBar: null,
+        macroTrend: null
+      }
+    };
+
+    // Datos de respaldo realistas (12 meses hasta 2026-02) para previsualización inmediata
+    const FALLBACK_SAMPLE_CSV = `Fecha,Cuenta,Importe,Moneda,Descripción,Categoria,Etiqueta,Tipo,Macro_Categoria,Tipo_Cuenta,TC_Aplicado,Monto_USD
+2026-02-18,Banco Galicia,6450000,ARS,HONORARIOS CONSULTORIA COPRONOR,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1200,5375.00
+2026-02-15,VISA Galicia,420000,ARS,SUPERMERCADO JUMBO ESCOBAR,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1200,350.00
+2026-02-10,Banco Galicia,890000,ARS,EXPENSAS CONSORCIO Y LUZ,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1200,741.67
+2026-02-06,Visa Santander,280,USD,AIRBNB ESTADIA FINDE,VIAJES Y TURISMO,ALOJAMIENTO,GASTO,Ocio y Viajes,Tarjeta de Crédito,1,280.00
+2026-02-03,Banco Galicia,210000,ARS,OSDE PLAN 310,SALUD Y BIENESTAR,PREPAGA,GASTO,Salud y Bienestar,Cuenta Bancaria,1200,175.00
+2026-01-22,Banco Galicia,5900000,ARS,HONORARIOS MENSUALES PROYECTO,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1180,5000.00
+2026-01-19,VISA Galicia,395000,ARS,SUPERMERCADO DISCO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1180,334.75
+2026-01-14,Banco Galicia,850000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1180,720.34
+2026-01-09,Visa Santander,165,USD,SERVICIOS CLOUD Y SAAS,TECNOLOGIA Y SUSCRIPCIONES,SOFTWARE,GASTO,Estilo de Vida y Compras,Tarjeta de Crédito,1,165.00
+2025-12-20,Banco Galicia,6800000,ARS,HONORARIOS Y AGUINALDO CONSULTORIA,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1160,5862.07
+2025-12-16,VISA Galicia,540000,ARS,SUPERMERCADO Y FIESTAS,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1160,465.52
+2025-12-11,Visa Santander,620,USD,PASAJES Y VACACIONES VERANO,VIAJES Y TURISMO,VUELOS,GASTO,Ocio y Viajes,Tarjeta de Crédito,1,620.00
+2025-12-05,Banco Galicia,820000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1160,706.90
+2025-11-20,Banco Santander,5500000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1140,4824.56
+2025-11-15,VISA Galicia,380000,ARS,SUPERMERCADO COTO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1140,333.33
+2025-11-08,Banco Galicia,790000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1140,692.98
+2025-10-21,Banco Galicia,5300000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1120,4732.14
+2025-10-12,VISA Galicia,360000,ARS,SUPERMERCADO JUMBO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1120,321.43
+2025-10-05,Banco Galicia,760000,ARS,EXPENSAS Y SERVICIOS,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1120,678.57
+2025-09-18,Banco Galicia,5100000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1100,4636.36
+2025-09-10,VISA Galicia,350000,ARS,SUPERMERCADO JUMBO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1100,318.18
+2025-08-19,Banco Galicia,4950000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1080,4583.33
+2025-08-08,Banco Galicia,720000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1080,666.67
+2025-07-17,Banco Galicia,4800000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1060,4528.30
+2025-07-09,VISA Galicia,340000,ARS,SUPERMERCADO DISCO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1060,320.75
+2025-06-18,Banco Galicia,4700000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1040,4519.23
+2025-06-06,Banco Galicia,690000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1040,663.46
+2025-05-19,Banco Galicia,4600000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1020,4509.80
+2025-05-11,VISA Galicia,325000,ARS,SUPERMERCADO JUMBO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,1020,318.63
+2025-04-16,Banco Galicia,4500000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,1000,4500.00
+2025-04-07,Banco Galicia,660000,ARS,EXPENSAS CONSORCIO,VIVIENDA Y SERVICIOS,EXPENSAS,GASTO,Vivienda y Servicios,Cuenta Bancaria,1000,660.00
+2025-03-18,Banco Galicia,4400000,ARS,HONORARIOS PROFESIONALES,HONORARIOS PROFESIONALES,CONSULTORIA,INGRESO,Ingresos Laborales y Profesionales,Cuenta Bancaria,990,4444.44
+2025-03-09,VISA Galicia,310000,ARS,SUPERMERCADO JUMBO,SUPERMERCADO Y ALMACEN,SUPERMERCADO,GASTO,Alimentación y Hogar,Tarjeta de Crédito,990,313.13`;
+
+    // =========================================================================
+    // TEMA OSCURO / CLARO
+    // =========================================================================
+    function initTheme() {
+      const saved = localStorage.getItem(LS_THEME_KEY);
+      const isDark = saved ? saved === 'dark' : true; // Por defecto Dark Mode estilo referencia
+      applyTheme(isDark);
+    }
+
+    function applyTheme(isDark) {
+      const htmlEl = document.documentElement;
+      if (isDark) {
+        htmlEl.classList.add('dark');
+      } else {
+        htmlEl.classList.remove('dark');
+      }
+      localStorage.setItem(LS_THEME_KEY, isDark ? 'dark' : 'light');
+      if (state.transactions.length > 0) {
+        renderAll();
+      }
+    }
+
+    function toggleTheme() {
+      const currentlyDark = document.documentElement.classList.contains('dark');
+      applyTheme(!currentlyDark);
+    }
+
+    // =========================================================================
+    // MODAL DE FUENTE CSV / GOOGLE SHEETS
+    // =========================================================================
+    function openSourceModal() {
+      const currentUrl = localStorage.getItem(LS_CSV_URL_KEY) || DEFAULT_CSV_URL;
+      document.getElementById('customCsvUrlInput').value = currentUrl;
+      const modal = document.getElementById('sourceModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSourceModal() {
+      const modal = document.getElementById('sourceModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function resetDefaultCsvUrl() {
+      localStorage.removeItem(LS_CSV_URL_KEY);
+      document.getElementById('customCsvUrlInput').value = DEFAULT_CSV_URL;
+    }
+
+    function saveAndSyncCustomUrl() {
+      const url = document.getElementById('customCsvUrlInput').value.trim();
+      if (url) {
+        localStorage.setItem(LS_CSV_URL_KEY, url);
+      } else {
+        localStorage.removeItem(LS_CSV_URL_KEY);
+      }
+      closeSourceModal();
+      syncFromGoogleSheets();
+    }
+
+    function handleLocalCsvFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const parsed = parseCsvRecords(results.data);
+          if (parsed.length > 0) {
+            closeSourceModal();
+            ingestDataset(parsed, `Archivo local: ${file.name}`);
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // CARGA Y PARSEO DE CSV
+    // =========================================================================
+    function parseNum(val) {
+      if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+      if (!val) return 0;
+      let str = String(val).trim();
+      if (!str || str === 'FALTA_TC' || str === '#N/A' || str === '#REF!') return 0;
+      let neg = false;
+      if (/^\(.*\)$/.test(str)) {
+        neg = true;
+        str = str.slice(1, -1).trim();
+      }
+      str = str.replace(/[$ARSUSD\s]/gi, '');
+      if (str.includes(',') && str.includes('.')) {
+        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+          str = str.replace(/,/g, '');
+        }
+      } else if (str.includes(',')) {
+        str = str.replace(',', '.');
+      }
+      const n = parseFloat(str);
+      if (!Number.isFinite(n)) return 0;
+      return neg ? -Math.abs(n) : n;
+    }
+
+    function parseIsoDate(raw) {
+      if (!raw) return '';
+      const s = String(raw).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+      if (m) {
+        const d = m[1].padStart(2, '0');
+        const mo = m[2].padStart(2, '0');
+        const y = m[3].length === 2 ? `20${m[3]}` : m[3];
+        return `${y}-${mo}-${d}`;
+      }
+      return '';
+    }
+
+    function parseCsvRecords(rows) {
+      const list = [];
+      for (const row of rows) {
+        const pick = (keys) => {
+          for (const k of keys) {
+            if (row[k] !== undefined && row[k] !== null) return row[k];
+          }
+          return '';
+        };
+        const fecha = parseIsoDate(pick(['Fecha', 'fecha', 'FECHA']));
+        if (!fecha) continue;
+
+        const year = fecha.slice(0, 4);
+        const ym = fecha.slice(0, 7);
+        const cuenta = String(pick(['Cuenta', 'cuenta']) || 'Sin Cuenta').trim();
+        const importe = parseNum(pick(['Importe', 'importe']));
+        const moneda = String(pick(['Moneda', 'moneda']) || 'ARS').trim().toUpperCase();
+        const descripcion = String(pick(['Descripción', 'Descripcion', 'descripcion']) || '').trim();
+        const categoria = String(pick(['Categoria', 'Categoría', 'categoria']) || 'Sin Categoría').trim();
+        const etiqueta = String(pick(['Etiqueta', 'etiqueta']) || 'Sin Etiqueta').trim();
+        const tipoRaw = String(pick(['Tipo', 'tipo']) || 'GASTO').trim().toUpperCase();
+        const macro = String(pick(['Macro_Categoria', 'Macro_Categoría', 'macro_categoria']) || 'Sin Macro-Categoría').trim();
+        const tc = parseNum(pick(['TC_Aplicado', 'tc_aplicado']));
+        let montoUsd = parseNum(pick(['Monto_USD', 'monto_usd']));
+
+        if (montoUsd === 0 && importe !== 0) {
+          if (moneda === 'USD') montoUsd = importe;
+          else if (tc > 0) montoUsd = importe / tc;
+        }
+
+        // Valor en ARS para análisis en pesos
+        let montoArs = 0;
+        if (moneda === 'ARS') montoArs = importe;
+        else if (moneda === 'USD') montoArs = tc > 1 ? importe * tc : importe * 1150;
+
+        let tipo = tipoRaw;
+        if (tipo !== 'INGRESO' && tipo !== 'GASTO' && tipo !== 'PATRIMONIAL') {
+          if (tipo === 'TRANSFER' || macro.toLowerCase().includes('patrimonio')) {
+            tipo = 'PATRIMONIAL';
+          } else {
+            tipo = importe >= 0 ? 'GASTO' : 'GASTO';
+          }
+        }
+
+        list.push({
+          fecha,
+          year,
+          ym,
+          cuenta,
+          importe,
+          moneda,
+          descripcion,
+          categoria,
+          etiqueta,
+          tipo,
+          macro,
+          tc,
+          montoUsd,
+          montoArs
+        });
+      }
+      return list;
+    }
+
+    async function syncFromGoogleSheets() {
+      const url = localStorage.getItem(LS_CSV_URL_KEY) || DEFAULT_CSV_URL;
+      const icon = document.getElementById('syncIcon');
+      icon.classList.add('animate-spin');
+      document.getElementById('syncStatusText').textContent = 'Sincronizando CSV de Google Sheets...';
+
+      try {
+        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        if (text.trim().startsWith('<!DOCTYPE') || text.includes('<html')) {
+          throw new Error('Sheet no publicado como CSV');
+        }
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const records = parseCsvRecords(parsed.data);
+        if (!records.length) throw new Error('CSV vacío');
+
+        const nowStr = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        ingestDataset(records, `Actualizado ${nowStr} • Google Sheets`);
+      } catch (err) {
+        console.warn('Usando dataset de respaldo:', err.message);
+        const fallbackParsed = Papa.parse(FALLBACK_SAMPLE_CSV, { header: true, skipEmptyLines: true });
+        const records = parseCsvRecords(fallbackParsed.data);
+        ingestDataset(records, 'Demo / Respaldo local (Publicá el Sheet para vivo)');
+      } finally {
+        setTimeout(() => icon.classList.remove('animate-spin'), 350);
+      }
+    }
+
+    function buildRolling12Months(anchorYm) {
+      if (!anchorYm || anchorYm.length < 7) return [];
+      let [y, m] = anchorYm.split('-').map(Number);
+      const arr = [];
+      for (let i = 0; i < 12; i++) {
+        arr.unshift(`${y}-${String(m).padStart(2, '0')}`);
+        m -= 1;
+        if (m === 0) {
+          m = 12;
+          y -= 1;
+        }
+      }
+      return arr;
+    }
+
+    function ingestDataset(records, statusLabel) {
+      state.transactions = records;
+
+      const monthsSet = new Set();
+      const yearsSet = new Set();
+      const accountsSet = new Set();
+
+      records.forEach(r => {
+        monthsSet.add(r.ym);
+        yearsSet.add(r.year);
+        if (r.cuenta) accountsSet.add(r.cuenta);
+      });
+
+      state.sortedMonths = Array.from(monthsSet).sort();
+      state.latestMonth = state.sortedMonths[state.sortedMonths.length - 1] || '';
+      state.rolling12Months = buildRolling12Months(state.latestMonth);
+
+      const yearsDesc = Array.from(yearsSet).sort().reverse();
+      state.latestYear = yearsDesc[0] || '';
+
+      // Populate Year dropdown defaulting to the latest year present in data
+      const yearSelect = document.getElementById('filterYear');
+      yearSelect.innerHTML = '';
+      yearsDesc.forEach((yr, idx) => {
+        const opt = document.createElement('option');
+        opt.value = yr;
+        opt.textContent = idx === 0 ? `${yr} (Último año)` : yr;
+        yearSelect.appendChild(opt);
+      });
+      const optAllYears = document.createElement('option');
+      optAllYears.value = 'ALL';
+      optAllYears.textContent = 'Todos los años';
+      yearSelect.appendChild(optAllYears);
+      if (state.latestYear) yearSelect.value = state.latestYear;
+
+      // Populate Month dropdown
+      const monthSelect = document.getElementById('filterMonth');
+      monthSelect.innerHTML = '<option value="ALL">Todos los meses</option>';
+      Array.from(state.sortedMonths).reverse().forEach(ym => {
+        const opt = document.createElement('option');
+        opt.value = ym;
+        opt.textContent = `${formatMonthShort(ym)} (${ym})`;
+        monthSelect.appendChild(opt);
+      });
+
+      // Populate Account & Exclude Account dropdowns
+      const sortedAccounts = Array.from(accountsSet).sort();
+      const accSelect = document.getElementById('filterAccount');
+      const excSelect = document.getElementById('filterExcludeAccount');
+      accSelect.innerHTML = '<option value="ALL">Todas las cuentas</option>';
+      excSelect.innerHTML = '<option value="NONE">Ninguna excluida</option>';
+      sortedAccounts.forEach(acc => {
+        const o1 = document.createElement('option');
+        o1.value = acc;
+        o1.textContent = acc;
+        accSelect.appendChild(o1);
+
+        const o2 = document.createElement('option');
+        o2.value = acc;
+        o2.textContent = acc;
+        excSelect.appendChild(o2);
+      });
+
+      document.getElementById('syncStatusText').textContent = statusLabel;
+      document.getElementById('badgeRollingWindow').textContent =
+        state.rolling12Months.length ? `Ventana 12M: ${formatMonthShort(state.rolling12Months[0])} – ${formatMonthShort(state.latestMonth)}` : 'Ventana 12M: --';
+
+      state.selectedMacro = null;
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+
+      renderAll();
+    }
+
+    // =========================================================================
+    // CONTROLES DE ESTADO Y FORMATEO
+    // =========================================================================
+    function formatMonthShort(ym) {
+      if (!ym || ym.length < 7) return ym || '';
+      const names = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const [y, m] = ym.split('-');
+      return `${names[Number(m) - 1] || m} ${y}`;
+    }
+
+    function getTxAmount(tx) {
+      return state.currency === 'USD' ? Math.abs(tx.montoUsd) : Math.abs(tx.montoArs);
+    }
+
+    function formatCurrency(val, forceCurr = null) {
+      const curr = forceCurr || state.currency;
+      const num = Number(val || 0);
+      const sign = num < -0.005 ? '-' : '';
+      const abs = Math.abs(num);
+      const prefix = curr === 'USD' ? 'US$' : '$';
+      const decimals = abs >= 1000 ? 0 : 2;
+      return `${sign}${prefix}${abs.toLocaleString('es-AR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    }
+
+    function formatCurrencyExact(val, curr = 'USD') {
+      const num = Number(val || 0);
+      const sign = num < -0.005 ? '-' : '';
+      const abs = Math.abs(num);
+      const prefix = curr === 'USD' ? 'US$' : '$';
+      return `${sign}${prefix}${abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function setCurrency(curr) {
+      state.currency = curr;
+      document.getElementById('currencyHeaderPill').textContent = curr;
+
+      const btnUSD = document.getElementById('btnCurrUSD');
+      const btnARS = document.getElementById('btnCurrARS');
+      if (curr === 'USD') {
+        btnUSD.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-violetAccent-500 text-white';
+        btnARS.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+      } else {
+        btnARS.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-violetAccent-500 text-white';
+        btnUSD.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+      }
+      renderAll();
+    }
+
+    function toggleCurrency() {
+      setCurrency(state.currency === 'USD' ? 'ARS' : 'USD');
+    }
+
+    function setAnalysisMode(mode) {
+      state.analysisMode = mode;
+      state.selectedMacro = null;
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+
+      const btnGasto = document.getElementById('btnModeGASTO');
+      const btnIngreso = document.getElementById('btnModeINGRESO');
+      const badge = document.getElementById('macroModeBadge');
+      const drillPill = document.getElementById('drillFlowPill');
+
+      if (mode === 'GASTO') {
+        btnGasto.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40';
+        btnIngreso.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-transparent';
+        badge.textContent = 'GASTOS';
+        badge.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30';
+        drillPill.textContent = 'GASTOS';
+        drillPill.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-300';
+      } else {
+        btnIngreso.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40';
+        btnGasto.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-transparent';
+        badge.textContent = 'INGRESOS';
+        badge.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
+        drillPill.textContent = 'INGRESOS';
+        drillPill.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300';
+      }
+      renderAll();
+    }
+
+    function setChartWindow(win) {
+      state.chartWindow = win;
+      const b12 = document.getElementById('btnWindow12M');
+      const bAll = document.getElementById('btnWindowALL');
+      if (win === '12M') {
+        b12.className = 'px-2.5 py-1 rounded-md bg-violetAccent-500 text-white cursor-pointer transition';
+        bAll.className = 'px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 cursor-pointer transition';
+        document.getElementById('evolutionSubtitle').textContent = 'Últimos 12 meses anclados al último mes disponible • Ingresos, Gastos y Flujo Neto';
+      } else {
+        bAll.className = 'px-2.5 py-1 rounded-md bg-violetAccent-500 text-white cursor-pointer transition';
+        b12.className = 'px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 cursor-pointer transition';
+        document.getElementById('evolutionSubtitle').textContent = 'Serie cronológica completa • Ingresos, Gastos y Flujo Neto';
+      }
+      renderEvolutionChart();
+    }
+
+    function setActiveTab(tab) {
+      state.activeTab = tab;
+      const tabs = ['VISUAL', 'BALANCE', 'DRILL'];
+      tabs.forEach(t => {
+        const btnId = t === 'VISUAL' ? 'tabBtnVisual' : t === 'BALANCE' ? 'tabBtnBalance' : 'tabBtnDrill';
+        const btn = document.getElementById(btnId);
+        if (t === tab) {
+          btn.className = 'pb-3 text-xs sm:text-sm font-semibold border-b-2 border-violetAccent-500 text-slate-900 dark:text-white whitespace-nowrap transition cursor-pointer inline-flex items-center gap-2';
+        } else {
+          btn.className = 'pb-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 whitespace-nowrap transition cursor-pointer inline-flex items-center gap-2';
+        }
+      });
+
+      document.getElementById('panelVisual').classList.toggle('hidden', tab !== 'VISUAL' && tab !== 'DRILL');
+      document.getElementById('panelBalance').classList.toggle('hidden', tab !== 'BALANCE');
+      document.getElementById('drilldownSection').classList.toggle('hidden', tab !== 'VISUAL' && tab !== 'DRILL');
+
+      if (tab === 'DRILL') {
+        document.getElementById('drilldownSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function onFilterChange() {
+      state.selectedMacro = null;
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+      renderAll();
+    }
+
+    // =========================================================================
+    // FILTRADO DE TRANSACCIONES
+    // =========================================================================
+    function getFilteredTransactions({ ignoreMonth = false, ignoreYear = false } = {}) {
+      const yearVal = ignoreYear ? 'ALL' : document.getElementById('filterYear').value;
+      const monthVal = ignoreMonth ? 'ALL' : document.getElementById('filterMonth').value;
+      const accVal = document.getElementById('filterAccount').value;
+      const excVal = document.getElementById('filterExcludeAccount').value;
+      const scopeVal = document.getElementById('filterTipoScope').value;
+
+      return state.transactions.filter(tx => {
+        if (scopeVal === 'OPERATIVO' && tx.tipo === 'PATRIMONIAL') return false;
+        if (yearVal && yearVal !== 'ALL' && tx.year !== yearVal) return false;
+        if (monthVal && monthVal !== 'ALL' && tx.ym !== monthVal) return false;
+        if (accVal && accVal !== 'ALL' && tx.cuenta !== accVal) return false;
+        if (excVal && excVal !== 'NONE' && tx.cuenta === excVal) return false;
+        return true;
+      });
+    }
+
+    function getModeTransactions(baseTxs) {
+      return baseTxs.filter(tx => tx.tipo === state.analysisMode);
+    }
+
+    // =========================================================================
+    // RENDERIZADO GENERAL
+    // =========================================================================
+    function renderAll() {
+      const filtered = getFilteredTransactions();
+      document.getElementById('badgeRecordCount').textContent = `${filtered.length.toLocaleString('es-AR')} registros`;
+
+      renderKPIs(filtered);
+      renderEvolutionChart();
+      renderMacroBreakdown(filtered);
+      renderMonthlyBalanceTables();
+      renderDrillDown(filtered);
+    }
+
+    function renderKPIs(filtered) {
+      let totalIngresos = 0;
+      let countIngresos = 0;
+      let totalGastos = 0;
+      let countGastos = 0;
+
+      filtered.forEach(tx => {
+        const amt = getTxAmount(tx);
+        if (tx.tipo === 'INGRESO') {
+          totalIngresos += amt;
+          countIngresos += 1;
+        } else if (tx.tipo === 'GASTO') {
+          totalGastos += amt;
+          countGastos += 1;
+        }
+      });
+
+      const netFlow = totalIngresos - totalGastos;
+      const savingsPct = totalIngresos > 0 ? (netFlow / totalIngresos) * 100 : 0;
+
+      document.getElementById('kpiIngresosAmount').textContent = formatCurrency(totalIngresos);
+      document.getElementById('kpiIngresosOps').textContent = `${countIngresos.toLocaleString('es-AR')} ops`;
+
+      document.getElementById('kpiGastosAmount').textContent = formatCurrency(totalGastos);
+      document.getElementById('kpiGastosOps').textContent = `${countGastos.toLocaleString('es-AR')} consumos`;
+
+      const netEl = document.getElementById('kpiNetoAmount');
+      netEl.textContent = formatCurrency(netFlow);
+      netEl.className = `mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${
+        netFlow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+      }`;
+
+      document.getElementById('kpiSavingsRate').textContent = `${savingsPct >= 0 ? '+' : ''}${savingsPct.toFixed(1)}% margen neto`;
+      document.getElementById('kpiNetoStatus').textContent = netFlow >= 0 ? 'Superávit operativo' : 'Déficit operativo';
+
+      // Comparativa con año anterior si hay un año específico seleccionado
+      const selYear = document.getElementById('filterYear').value;
+      if (selYear && selYear !== 'ALL') {
+        const prevYear = String(Number(selYear) - 1);
+        const allWithoutYear = getFilteredTransactions({ ignoreYear: true, ignoreMonth: true });
+        let prevIng = 0;
+        let prevGas = 0;
+        allWithoutYear.forEach(tx => {
+          if (tx.year === prevYear) {
+            if (tx.tipo === 'INGRESO') prevIng += getTxAmount(tx);
+            else if (tx.tipo === 'GASTO') prevGas += getTxAmount(tx);
+          }
+        });
+        const ingDelta = prevIng > 0 ? ((totalIngresos - prevIng) / prevIng) * 100 : null;
+        const gasDelta = prevGas > 0 ? ((totalGastos - prevGas) / prevGas) * 100 : null;
+
+        document.getElementById('kpiIngresosDelta').textContent = ingDelta !== null
+          ? `${ingDelta >= 0 ? '▲' : '▼'} ${Math.abs(ingDelta).toFixed(1)}% vs ${prevYear}`
+          : `Sin base ${prevYear}`;
+        document.getElementById('kpiGastosDelta').textContent = gasDelta !== null
+          ? `${gasDelta >= 0 ? '▲' : '▼'} ${Math.abs(gasDelta).toFixed(1)}% vs ${prevYear}`
+          : `Sin base ${prevYear}`;
+      } else {
+        document.getElementById('kpiIngresosDelta').textContent = 'Período seleccionado';
+        document.getElementById('kpiGastosDelta').textContent = 'Período seleccionado';
+      }
+    }
+
+    // =========================================================================
+    // EVOLUCIÓN TEMPORAL MENSUAL (12M MÓVILES POR DEFECTO DESDE ÚLTIMO MES)
+    // =========================================================================
+    function renderEvolutionChart() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(51, 68, 120, 0.28)' : 'rgba(148, 163, 184, 0.22)';
+      const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+      const baseTxs = getFilteredTransactions({ ignoreYear: state.chartWindow === '12M', ignoreMonth: true });
+      const monthsList = state.chartWindow === '12M'
+        ? state.rolling12Months
+        : state.sortedMonths;
+
+      const ingresosMap = {};
+      const gastosMap = {};
+      monthsList.forEach(m => {
+        ingresosMap[m] = 0;
+        gastosMap[m] = 0;
+      });
+
+      baseTxs.forEach(tx => {
+        if (!monthsList.includes(tx.ym)) return;
+        const amt = getTxAmount(tx);
+        if (tx.tipo === 'INGRESO') ingresosMap[tx.ym] += amt;
+        else if (tx.tipo === 'GASTO') gastosMap[tx.ym] += amt;
+      });
+
+      const ingresosSeries = monthsList.map(m => Number(ingresosMap[m].toFixed(2)));
+      const gastosSeries = monthsList.map(m => Number(gastosMap[m].toFixed(2)));
+      const netSeries = monthsList.map(m => Number((ingresosMap[m] - gastosMap[m]).toFixed(2)));
+
+      const ctx = document.getElementById('evolutionChart').getContext('2d');
+      if (state.charts.evolution) state.charts.evolution.destroy();
+
+      state.charts.evolution = new Chart(ctx, {
+        data: {
+          labels: monthsList.map(formatMonthShort),
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Ingresos',
+              data: ingresosSeries,
+              backgroundColor: '#10b981',
+              borderRadius: 4,
+              barPercentage: 0.72,
+              categoryPercentage: 0.65,
+              order: 2
+            },
+            {
+              type: 'bar',
+              label: 'Gastos',
+              data: gastosSeries,
+              backgroundColor: '#f43f5e',
+              borderRadius: 4,
+              barPercentage: 0.72,
+              categoryPercentage: 0.65,
+              order: 3
+            },
+            {
+              type: 'line',
+              label: 'Flujo Neto',
+              data: netSeries,
+              borderColor: '#635bff',
+              backgroundColor: '#635bff',
+              borderWidth: 2.5,
+              pointRadius: 3.5,
+              pointHoverRadius: 5,
+              tension: 0.25,
+              fill: false,
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#10172d' : '#0f172a',
+              titleColor: '#f8fafc',
+              bodyColor: '#e2e8f0',
+              borderColor: isDark ? '#273561' : '#334155',
+              borderWidth: 1,
+              callbacks: {
+                label: (c) => ` ${c.dataset.label}: ${formatCurrencyExact(c.parsed.y, state.currency)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: tickColor, font: { size: 10 }, maxRotation: 40, minRotation: 0 }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: {
+                color: tickColor,
+                font: { size: 10 },
+                callback: (v) => formatCurrency(v)
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // DESGLOSE POR MACRO-CATEGORÍA (RESPETA TOGGLE GASTOS / INGRESOS)
+    // =========================================================================
+    function renderMacroBreakdown(filtered) {
+      const isDark = document.documentElement.classList.contains('dark');
+      const modeTxs = getModeTransactions(filtered);
+
+      const macroTotals = {};
+      let grandTotal = 0;
+      modeTxs.forEach(tx => {
+        const amt = getTxAmount(tx);
+        macroTotals[tx.macro] = (macroTotals[tx.macro] || 0) + amt;
+        grandTotal += amt;
+      });
+
+      const entries = Object.entries(macroTotals).sort((a, b) => b[1] - a[1]);
+
+      document.getElementById('macroBreakdownTitle').textContent =
+        state.analysisMode === 'GASTO' ? 'Desglose por Macro-Categoría' : 'Fuentes por Macro-Categoría';
+      document.getElementById('macroBreakdownSubtitle').textContent =
+        state.analysisMode === 'GASTO'
+          ? 'Distribución de gastos por macro-categoría (clic para drill-down)'
+          : 'Distribución de ingresos por macro-categoría (clic para drill-down)';
+
+      const ctx = document.getElementById('macroDonutChart').getContext('2d');
+      if (state.charts.macroDonut) state.charts.macroDonut.destroy();
+
+      state.charts.macroDonut = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: entries.map(e => e[0]),
+          datasets: [{
+            data: entries.map(e => Number(e[1].toFixed(2))),
+            backgroundColor: entries.map((_, idx) => PALETTE[idx % PALETTE.length]),
+            borderColor: isDark ? '#10172d' : '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '66%',
+          onClick: (_, elements) => {
+            if (elements && elements.length > 0) {
+              const clickedMacro = entries[elements[0].index]?.[0];
+              if (clickedMacro) {
+                focusMacroInDrillDown(clickedMacro);
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#10172d' : '#0f172a',
+              callbacks: {
+                label: (c) => {
+                  const pct = grandTotal > 0 ? ((c.parsed / grandTotal) * 100).toFixed(1) : '0.0';
+                  return ` ${c.label}: ${formatCurrencyExact(c.parsed, state.currency)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const listContainer = document.getElementById('macroBreakdownList');
+      if (!entries.length) {
+        listContainer.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No hay movimientos de ${state.analysisMode.toLowerCase()} en el filtro actual.</p>`;
+        return;
+      }
+
+      listContainer.innerHTML = entries.map(([macro, amt], idx) => {
+        const pct = grandTotal > 0 ? (amt / grandTotal) * 100 : 0;
+        const color = PALETTE[idx % PALETTE.length];
+        const isSelected = state.selectedMacro === macro;
+        return `
+          <button type="button" onclick="focusMacroInDrillDown('${escapeJs(macro)}')"
+            class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer ${
+              isSelected
+                ? 'bg-indigo-500/15 ring-1 ring-indigo-500/40 font-semibold'
+                : 'hover:bg-slate-100 dark:hover:bg-midnight-800/80'
+            }">
+            <span class="flex items-center gap-2 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${color}"></span>
+              <span class="truncate text-slate-700 dark:text-slate-200">${escapeHtml(macro)}</span>
+            </span>
+            <span class="flex items-center gap-2.5 shrink-0 tabular-nums">
+              <span class="text-[11px] text-slate-500 dark:text-slate-400">${pct.toFixed(1)}%</span>
+              <span class="font-bold text-slate-900 dark:text-white">${formatCurrencyExact(amt, state.currency)}</span>
+            </span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function focusMacroInDrillDown(macroName) {
+      state.selectedMacro = macroName;
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+      renderDrillDown(getFilteredTransactions());
+      document.getElementById('drilldownSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // =========================================================================
+    // BALANCE MENSUAL Y FLUJO NETO (RESUMEN EN TAB 1 + TABLA COMPLETA EN TAB 2)
+    // =========================================================================
+    function renderMonthlyBalanceTables() {
+      const baseTxs = getFilteredTransactions({ ignoreYear: true, ignoreMonth: true });
+      const months12 = state.rolling12Months;
+
+      const rowsData = months12.map(ym => {
+        let ing = 0;
+        let ingOps = 0;
+        let gas = 0;
+        let gasOps = 0;
+
+        baseTxs.forEach(tx => {
+          if (tx.ym !== ym) return;
+          const amt = getTxAmount(tx);
+          if (tx.tipo === 'INGRESO') {
+            ing += amt;
+            ingOps += 1;
+          } else if (tx.tipo === 'GASTO') {
+            gas += amt;
+            gasOps += 1;
+          }
+        });
+
+        const net = ing - gas;
+        const savingsPct = ing > 0 ? (net / ing) * 100 : 0;
+        const coveragePct = gas > 0 ? (ing / gas) * 100 : 0;
+
+        return { ym, ing, ingOps, gas, gasOps, net, savingsPct, coveragePct };
+      });
+
+      // Mini tabla en Tab 1 (orden más reciente primero para lectura rápida)
+      const miniBody = document.getElementById('miniBalanceBody');
+      const recentFirst = [...rowsData].reverse();
+      miniBody.innerHTML = recentFirst.map(r => {
+        const netClass = r.net >= 0
+          ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+          : 'text-rose-600 dark:text-rose-400 font-bold';
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-midnight-800/50 transition">
+            <td class="py-2 px-3 font-medium text-slate-800 dark:text-slate-200">${formatMonthShort(r.ym)}</td>
+            <td class="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">${formatCurrencyExact(r.ing, state.currency)}</td>
+            <td class="py-2 px-3 text-right text-rose-600 dark:text-rose-400 font-medium">${formatCurrencyExact(r.gas, state.currency)}</td>
+            <td class="py-2 px-3 text-right ${netClass}">${formatCurrencyExact(r.net, state.currency)}</td>
+            <td class="py-2 px-3 text-right text-slate-600 dark:text-slate-300">${r.savingsPct >= 0 ? '+' : ''}${r.savingsPct.toFixed(1)}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Tabla completa en Tab 2
+      const fullBody = document.getElementById('fullBalanceBody');
+      fullBody.innerHTML = recentFirst.map(r => {
+        const netClass = r.net >= 0
+          ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+          : 'text-rose-600 dark:text-rose-400 font-bold';
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-midnight-800/50 transition">
+            <td class="py-2.5 px-3.5 font-semibold text-slate-800 dark:text-slate-200">${formatMonthShort(r.ym)} (${r.ym})</td>
+            <td class="py-2.5 px-3.5 text-right text-slate-500 dark:text-slate-400">${r.ingOps}</td>
+            <td class="py-2.5 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-semibold">${formatCurrencyExact(r.ing, state.currency)}</td>
+            <td class="py-2.5 px-3.5 text-right text-slate-500 dark:text-slate-400">${r.gasOps}</td>
+            <td class="py-2.5 px-3.5 text-right text-rose-600 dark:text-rose-400 font-semibold">${formatCurrencyExact(r.gas, state.currency)}</td>
+            <td class="py-2.5 px-3.5 text-right ${netClass}">${formatCurrencyExact(r.net, state.currency)}</td>
+            <td class="py-2.5 px-3.5 text-right text-slate-700 dark:text-slate-300">${r.savingsPct >= 0 ? '+' : ''}${r.savingsPct.toFixed(1)}%</td>
+            <td class="py-2.5 px-3.5 text-right text-slate-700 dark:text-slate-300">${r.coveragePct.toFixed(0)}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      const sumIng = rowsData.reduce((a, b) => a + b.ing, 0);
+      const sumIngOps = rowsData.reduce((a, b) => a + b.ingOps, 0);
+      const sumGas = rowsData.reduce((a, b) => a + b.gas, 0);
+      const sumGasOps = rowsData.reduce((a, b) => a + b.gasOps, 0);
+      const sumNet = sumIng - sumGas;
+      const sumSav = sumIng > 0 ? (sumNet / sumIng) * 100 : 0;
+      const sumCov = sumGas > 0 ? (sumIng / sumGas) * 100 : 0;
+
+      document.getElementById('fullBalanceFoot').innerHTML = `
+        <tr>
+          <td class="py-3 px-3.5">Total 12 Meses</td>
+          <td class="py-3 px-3.5 text-right">${sumIngOps}</td>
+          <td class="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400">${formatCurrencyExact(sumIng, state.currency)}</td>
+          <td class="py-3 px-3.5 text-right">${sumGasOps}</td>
+          <td class="py-3 px-3.5 text-right text-rose-600 dark:text-rose-400">${formatCurrencyExact(sumGas, state.currency)}</td>
+          <td class="py-3 px-3.5 text-right ${sumNet >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${formatCurrencyExact(sumNet, state.currency)}</td>
+          <td class="py-3 px-3.5 text-right">${sumSav >= 0 ? '+' : ''}${sumSav.toFixed(1)}%</td>
+          <td class="py-3 px-3.5 text-right">${sumCov.toFixed(0)}%</td>
+        </tr>
+      `;
+    }
+
+    // =========================================================================
+    // DRILL-DOWN DE 4 NIVELES: MACRO_CATEGORIA -> CATEGORIA -> ETIQUETA -> TX
+    // =========================================================================
+    function renderDrillDown(filtered) {
+      const modeTxs = getModeTransactions(filtered);
+      document.getElementById('thCatMonto').textContent = `Monto ${state.currency}`;
+
+      // Nivel 1: Macro_Categoria
+      const macroAgg = {};
+      let modeTotal = 0;
+      modeTxs.forEach(tx => {
+        const amt = getTxAmount(tx);
+        if (!macroAgg[tx.macro]) macroAgg[tx.macro] = { amount: 0, count: 0 };
+        macroAgg[tx.macro].amount += amt;
+        macroAgg[tx.macro].count += 1;
+        modeTotal += amt;
+      });
+
+      const macroSorted = Object.entries(macroAgg).sort((a, b) => b[1].amount - a[1].amount);
+      document.getElementById('drillMacroCount').textContent = `${macroSorted.length} rubros`;
+
+      if (macroSorted.length > 0 && (!state.selectedMacro || !macroAgg[state.selectedMacro])) {
+        state.selectedMacro = macroSorted[0][0];
+      } else if (macroSorted.length === 0) {
+        state.selectedMacro = null;
+      }
+
+      renderBreadcrumbAndReset();
+
+      const macroListEl = document.getElementById('drillMacroList');
+      if (!macroSorted.length) {
+        macroListEl.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Sin datos para el filtro actual.</p>`;
+      } else {
+        macroListEl.innerHTML = macroSorted.map(([macro, info], idx) => {
+          const pct = modeTotal > 0 ? (info.amount / modeTotal) * 100 : 0;
+          const active = state.selectedMacro === macro;
+          const dotColor = PALETTE[idx % PALETTE.length];
+          return `
+            <button type="button" onclick="selectDrillMacro('${escapeJs(macro)}')"
+              class="w-full text-left px-3 py-2.5 rounded-xl border transition cursor-pointer ${
+                active
+                  ? 'bg-violetAccent-500 text-white border-violetAccent-500 shadow-sm'
+                  : 'bg-slate-50/70 dark:bg-midnight-800/60 border-slate-200/80 dark:border-midnight-700/80 hover:bg-slate-100 dark:hover:bg-midnight-800'
+              }">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="flex items-center gap-2 font-semibold truncate">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${active ? '#ffffff' : dotColor}"></span>
+                  <span class="truncate">${escapeHtml(macro)}</span>
+                </span>
+                <span class="font-bold tabular-nums shrink-0">${formatCurrency(info.amount)}</span>
+              </div>
+              <div class="mt-1 flex items-center justify-between text-[11px] tabular-nums ${
+                active ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+              }">
+                <span>${info.count} movimientos</span>
+                <span>${pct.toFixed(1)}%</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      // Nivel 2: Categorías dentro de Macro_Categoria seleccionada
+      const macroTxs = state.selectedMacro
+        ? modeTxs.filter(tx => tx.macro === state.selectedMacro)
+        : [];
+
+      const macroSum = macroTxs.reduce((acc, tx) => acc + getTxAmount(tx), 0);
+      document.getElementById('level2Heading').textContent = state.selectedMacro
+        ? `2. Categorías en "${state.selectedMacro}"`
+        : '2. Categorías';
+      document.getElementById('level2TotalBadge').textContent = formatCurrencyExact(macroSum, state.currency);
+
+      const catAgg = {};
+      macroTxs.forEach(tx => {
+        const amt = getTxAmount(tx);
+        if (!catAgg[tx.categoria]) catAgg[tx.categoria] = { amount: 0, count: 0 };
+        catAgg[tx.categoria].amount += amt;
+        catAgg[tx.categoria].count += 1;
+      });
+
+      const catSorted = Object.entries(catAgg).sort((a, b) => b[1].amount - a[1].amount);
+      if (state.selectedCategoria && !catAgg[state.selectedCategoria]) {
+        state.selectedCategoria = null;
+      }
+
+      renderCategoryBarChart(catSorted);
+      renderMacroTrendChart();
+
+      const catBody = document.getElementById('level2CategoryTableBody');
+      if (!catSorted.length) {
+        catBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">Sin categorías</td></tr>`;
+      } else {
+        catBody.innerHTML = catSorted.map(([cat, info]) => {
+          const pctMacro = macroSum > 0 ? (info.amount / macroSum) * 100 : 0;
+          const isSel = state.selectedCategoria === cat;
+          return `
+            <tr onclick="selectDrillCategoria('${escapeJs(cat)}')"
+              class="cursor-pointer transition ${
+                isSel
+                  ? 'bg-indigo-500/15 font-semibold text-indigo-700 dark:text-indigo-300'
+                  : 'hover:bg-slate-50 dark:hover:bg-midnight-800/60'
+              }">
+              <td class="py-2 px-3">${escapeHtml(cat)}</td>
+              <td class="py-2 px-3 text-right text-slate-500 dark:text-slate-400">${info.count}</td>
+              <td class="py-2 px-3 text-right">${pctMacro.toFixed(1)}%</td>
+              <td class="py-2 px-3 text-right font-semibold">${formatCurrencyExact(info.amount, state.currency)}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Nivel 3: Etiquetas dentro de Categoría (o Macro si no hay Categoría seleccionada)
+      const etiBaseTxs = state.selectedCategoria
+        ? macroTxs.filter(tx => tx.categoria === state.selectedCategoria)
+        : macroTxs;
+
+      const etiAgg = {};
+      let etiBaseSum = 0;
+      etiBaseTxs.forEach(tx => {
+        const amt = getTxAmount(tx);
+        if (!etiAgg[tx.etiqueta]) etiAgg[tx.etiqueta] = { amount: 0, count: 0 };
+        etiAgg[tx.etiqueta].amount += amt;
+        etiAgg[tx.etiqueta].count += 1;
+        etiBaseSum += amt;
+      });
+
+      const etiSorted = Object.entries(etiAgg).sort((a, b) => b[1].amount - a[1].amount);
+      if (state.selectedEtiqueta && !etiAgg[state.selectedEtiqueta]) {
+        state.selectedEtiqueta = null;
+      }
+
+      document.getElementById('level3Heading').textContent = state.selectedCategoria
+        ? `3. Etiquetas en "${state.selectedCategoria}"`
+        : state.selectedMacro
+          ? `3. Etiquetas en "${state.selectedMacro}"`
+          : '3. Etiquetas';
+      document.getElementById('level3Badge').textContent = `${etiSorted.length} etiquetas`;
+
+      const etiGrid = document.getElementById('level3EtiquetasGrid');
+      if (!etiSorted.length) {
+        etiGrid.innerHTML = `<p class="col-span-full text-xs text-slate-400 py-3">Sin etiquetas disponibles.</p>`;
+      } else {
+        etiGrid.innerHTML = etiSorted.map(([eti, info]) => {
+          const pct = etiBaseSum > 0 ? (info.amount / etiBaseSum) * 100 : 0;
+          const active = state.selectedEtiqueta === eti;
+          return `
+            <button type="button" onclick="selectDrillEtiqueta('${escapeJs(eti)}')"
+              class="text-left p-3 rounded-xl border transition cursor-pointer ${
+                active
+                  ? 'bg-emerald-500/15 border-emerald-500 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/40'
+                  : 'bg-slate-50/70 dark:bg-midnight-800/60 border-slate-200/80 dark:border-midnight-700/80 hover:bg-slate-100 dark:hover:bg-midnight-800'
+              }">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-semibold truncate">${escapeHtml(eti)}</span>
+                <span class="font-bold tabular-nums shrink-0">${formatCurrency(info.amount)}</span>
+              </div>
+              <div class="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                <span>${info.count} movs</span>
+                <span>${pct.toFixed(1)}%</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      // Nivel 4: Transacciones individuales
+      renderLevel4Transactions();
+    }
+
+    function renderCategoryBarChart(catSorted) {
+      const isDark = document.documentElement.classList.contains('dark');
+      const tickColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? 'rgba(51, 68, 120, 0.25)' : 'rgba(148, 163, 184, 0.2)';
+
+      const topCats = catSorted.slice(0, 7);
+      const ctx = document.getElementById('categoryBarChart').getContext('2d');
+      if (state.charts.categoryBar) state.charts.categoryBar.destroy();
+
+      state.charts.categoryBar = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topCats.map(c => c[0]),
+          datasets: [{
+            label: state.currency,
+            data: topCats.map(c => Number(c[1].amount.toFixed(2))),
+            backgroundColor: topCats.map((_, i) => PALETTE[i % PALETTE.length]),
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#10172d' : '#0f172a',
+              callbacks: {
+                label: (c) => ` ${formatCurrencyExact(c.parsed.x, state.currency)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatCurrency(v) }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: tickColor, font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMacroTrendChart() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const tickColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? 'rgba(51, 68, 120, 0.25)' : 'rgba(148, 163, 184, 0.2)';
+
+      const months12 = state.rolling12Months;
+      const baseTxs = getFilteredTransactions({ ignoreYear: true, ignoreMonth: true }).filter(tx => {
+        if (tx.tipo !== state.analysisMode) return false;
+        if (state.selectedMacro && tx.macro !== state.selectedMacro) return false;
+        if (state.selectedCategoria && tx.categoria !== state.selectedCategoria) return false;
+        return true;
+      });
+
+      const byMonth = {};
+      months12.forEach(m => { byMonth[m] = 0; });
+      baseTxs.forEach(tx => {
+        if (months12.includes(tx.ym)) byMonth[tx.ym] += getTxAmount(tx);
+      });
+
+      document.getElementById('macroTrendLabel').textContent = state.selectedCategoria
+        ? `Tendencia 12M: ${state.selectedCategoria}`
+        : state.selectedMacro
+          ? `Tendencia 12M: ${state.selectedMacro}`
+          : 'Tendencia 12M';
+
+      const ctx = document.getElementById('macroTrendChart').getContext('2d');
+      if (state.charts.macroTrend) state.charts.macroTrend.destroy();
+
+      const accent = state.analysisMode === 'GASTO' ? '#f43f5e' : '#10b981';
+      state.charts.macroTrend = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: months12.map(formatMonthShort),
+          datasets: [{
+            label: state.selectedCategoria || state.selectedMacro || 'Total',
+            data: months12.map(m => Number(byMonth[m].toFixed(2))),
+            backgroundColor: accent,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#10172d' : '#0f172a',
+              callbacks: {
+                label: (c) => ` ${formatCurrencyExact(c.parsed.y, state.currency)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: tickColor, font: { size: 9 }, maxRotation: 45 }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatCurrency(v) }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLevel4Transactions() {
+      const filtered = getFilteredTransactions();
+      const searchQuery = document.getElementById('txSearchInput').value.trim().toLowerCase();
+
+      const rows = filtered.filter(tx => {
+        if (tx.tipo !== state.analysisMode) return false;
+        if (state.selectedMacro && tx.macro !== state.selectedMacro) return false;
+        if (state.selectedCategoria && tx.categoria !== state.selectedCategoria) return false;
+        if (state.selectedEtiqueta && tx.etiqueta !== state.selectedEtiqueta) return false;
+        if (searchQuery) {
+          const hay = `${tx.descripcion} ${tx.cuenta} ${tx.categoria} ${tx.etiqueta}`.toLowerCase();
+          if (!hay.includes(searchQuery)) return false;
+        }
+        return true;
+      }).sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+      document.getElementById('txFilteredCount').textContent = `${rows.length.toLocaleString('es-AR')} movs`;
+
+      const tbody = document.getElementById('level4TxTableBody');
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No hay transacciones individuales para esta selección.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.slice(0, 300).map(tx => `
+        <tr class="hover:bg-slate-50/80 dark:hover:bg-midnight-800/60 transition">
+          <td class="py-2 px-3 whitespace-nowrap text-slate-600 dark:text-slate-300">${tx.fecha}</td>
+          <td class="py-2 px-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-200">${escapeHtml(tx.cuenta)}</td>
+          <td class="py-2 px-3 whitespace-nowrap">
+            <span class="font-medium text-slate-800 dark:text-slate-100">${escapeHtml(tx.categoria)}</span>
+            <span class="text-slate-400"> / </span>
+            <span class="text-indigo-600 dark:text-indigo-400 font-medium">${escapeHtml(tx.etiqueta)}</span>
+          </td>
+          <td class="py-2 px-3 text-slate-700 dark:text-slate-300 max-w-md truncate" title="${escapeHtml(tx.descripcion)}">${escapeHtml(tx.descripcion)}</td>
+          <td class="py-2 px-3 text-right whitespace-nowrap text-slate-500 dark:text-slate-400">${formatCurrencyExact(tx.importe, tx.moneda)}</td>
+          <td class="py-2 px-3 text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">${formatCurrencyExact(tx.montoUsd, 'USD')}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderBreadcrumbAndReset() {
+      const bc = document.getElementById('drillBreadcrumb');
+      const resetBtn = document.getElementById('btnResetDrill');
+
+      const parts = [
+        `<button type="button" onclick="resetDrillDown()" class="hover:underline font-medium text-slate-600 dark:text-slate-300 cursor-pointer">${state.analysisMode === 'GASTO' ? 'Gastos' : 'Ingresos'}</button>`
+      ];
+
+      if (state.selectedMacro) {
+        parts.push(`<span>/</span>`);
+        parts.push(`<button type="button" onclick="selectDrillMacro('${escapeJs(state.selectedMacro)}')" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">${escapeHtml(state.selectedMacro)}</button>`);
+      }
+      if (state.selectedCategoria) {
+        parts.push(`<span>/</span>`);
+        parts.push(`<button type="button" onclick="selectDrillCategoria('${escapeJs(state.selectedCategoria)}')" class="font-semibold text-slate-800 dark:text-slate-100 hover:underline cursor-pointer">${escapeHtml(state.selectedCategoria)}</button>`);
+      }
+      if (state.selectedEtiqueta) {
+        parts.push(`<span>/</span>`);
+        parts.push(`<span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-semibold">${escapeHtml(state.selectedEtiqueta)}</span>`);
+      }
+
+      bc.innerHTML = parts.join('');
+      const hasDeepSelection = Boolean(state.selectedCategoria || state.selectedEtiqueta);
+      resetBtn.classList.toggle('hidden', !hasDeepSelection);
+    }
+
+    function selectDrillMacro(macro) {
+      state.selectedMacro = macro;
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+      renderAll();
+    }
+
+    function selectDrillCategoria(cat) {
+      state.selectedCategoria = state.selectedCategoria === cat ? null : cat;
+      state.selectedEtiqueta = null;
+      renderDrillDown(getFilteredTransactions());
+    }
+
+    function selectDrillEtiqueta(eti) {
+      state.selectedEtiqueta = state.selectedEtiqueta === eti ? null : eti;
+      renderDrillDown(getFilteredTransactions());
+    }
+
+    function resetDrillDown() {
+      state.selectedCategoria = null;
+      state.selectedEtiqueta = null;
+      renderDrillDown(getFilteredTransactions());
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeJs(str) {
+      return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // =========================================================================
+    // ARRANQUE
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      syncFromGoogleSheets();
+    });
+  </script>
+</body>
+</html>
