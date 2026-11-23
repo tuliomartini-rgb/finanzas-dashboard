@@ -432,32 +432,6 @@
     </div>
   </section>
 
-  <!-- MONTHLY BALANCE TABLE -->
-  <section class="card">
-    <div class="sec-head">
-      <div>
-        <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
-        <div class="sec-sub">Comparativa mensual entre Ingresos, Gastos, Patrimonial y Flujo Neto</div>
-        <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Mes</th>
-            <th class="num">Ingresos</th>
-            <th class="num">Gastos</th>
-            <th class="num">Patrimonial</th>
-            <th class="num">Flujo Neto</th>
-            <th class="num">Margen / Ahorro</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyBalance"></tbody>
-      </table>
-    </div>
-  </section>
-
   <!-- INDIVIDUAL TRANSACTIONS -->
   <section class="card">
     <div class="sec-head">
@@ -486,6 +460,33 @@
       </table>
     </div>
   </section>
+
+  <!-- MONTHLY BALANCE TABLE -->
+  <section class="card">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
+        <div class="sec-sub">Comparativa mensual entre Ingresos, Gastos, Patrimonial y Flujo Neto</div>
+        <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Ingresos</th>
+            <th class="num">Gastos</th>
+            <th class="num">Patrimonial</th>
+            <th class="num">Flujo Neto</th>
+            <th class="num">Margen / Ahorro</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyBalance"></tbody>
+      </table>
+    </div>
+  </section>
+
 
 </div>
 
@@ -1292,8 +1293,25 @@ function renderHierarchyExpenseEvolutionChart() {
 }
 
 function renderBalanceTable(rows) {
+  const filteredRows = rows.filter(r => {
+    if (state.macro && r.macro !== state.macro) return false;
+    if (state.cat && r.cat !== state.cat) return false;
+    if (state.tag && r.tag !== state.tag) return false;
+    return true;
+  });
+
+  const metaEl = document.getElementById("metaBalance");
+  if (metaEl) {
+    const baseMeta = getPeriodAndAccountSummary();
+    const hierParts = [];
+    if (state.macro) hierParts.push(`Macro: ${state.macro}`);
+    if (state.cat) hierParts.push(`Categoría: ${state.cat}`);
+    if (state.tag) hierParts.push(`Etiqueta: ${state.tag}`);
+    metaEl.textContent = hierParts.length > 0 ? `${baseMeta} • ${hierParts.join(" › ")}` : baseMeta;
+  }
+
   const byYm = {};
-  rows.forEach(r => {
+  filteredRows.forEach(r => {
     if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0, pat: 0 };
     if (r.tipo === "INGRESO") byYm[r.ym].ing += amt(r);
     else if (r.tipo === "GASTO") byYm[r.ym].gas += amt(r);
