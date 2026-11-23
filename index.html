@@ -200,6 +200,20 @@
     .modal p { font-size: 13px; color: var(--text-muted); }
     .modal input[type="text"] { width: 100%; }
     .modal-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+    .legend-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .legend-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px;
+      border-radius: 999px; background: var(--bg-card-2); border: 1px solid var(--border);
+      font-size: 11px; color: var(--text); cursor: pointer; transition: 0.15s;
+    }
+    .legend-pill:hover { border-color: var(--primary); }
+    .legend-pill.selected { border-color: var(--primary); background: var(--primary-soft); font-weight: 700; }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--text); }
+    tfoot td { background: var(--bg-card-2); font-weight: 800; border-top: 2px solid var(--border); }
+
   </style>
 </head>
 <body>
@@ -405,6 +419,17 @@
         </table>
       </div>
     </div>
+
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+      <div class="sec-head" style="margin-bottom:8px;">
+        <div>
+          <div class="sec-title" style="font-size:14.5px;" id="hierEvoTitle">Evolución Mensual del Gasto (Selección Jerárquica)</div>
+          <div class="sec-sub" id="hierEvoSubtitle">Mismo horizonte temporal que Evolución Temporal Mensual</div>
+        </div>
+        <span class="pill-muted" id="hierEvoWindow">--</span>
+      </div>
+      <div class="chart-box-sm"><canvas id="chartHierEvo"></canvas></div>
+    </div>
   </section>
 
   <!-- MONTHLY BALANCE TABLE -->
@@ -447,14 +472,14 @@
       <table>
         <thead>
           <tr>
-            <th>Fecha</th>
+            <th class="sortable" id="thSortDate" title="Ordenar por Fecha">Fecha <span id="sortDateIcon">↓</span></th>
             <th>Tipo</th>
             <th>Cuenta</th>
             <th>Macro-Categoría</th>
             <th>Categoría</th>
             <th>Etiqueta</th>
             <th>Descripción</th>
-            <th class="num">Monto</th>
+            <th class="num sortable" id="thSortAmount" title="Ordenar por Monto">Monto <span id="sortAmountIcon">↕</span></th>
           </tr>
         </thead>
         <tbody id="tbodyTx"></tbody>
@@ -527,10 +552,12 @@ let state = {
   cat: "",
   tag: "",
   hierType: "GASTO",
-  search: ""
+  search: "",
+  txSortField: "fecha",
+  txSortDir: "desc"
 };
 
-let charts = { evo: null, macro: null, hier: null };
+let charts = { evo: null, macro: null, hier: null, hierEvo: null };
 
 /* ---------- CSV PARSER (RFC-4180) ---------- */
 function parseCSV(text) {
@@ -887,8 +914,7 @@ function renderAll() {
   renderTransactionsTable(rowsWithPat);
 }
 
-function renderEvolutionChart() {
-  const allUnfilteredPeriod = getBaseFilteredRows(true, false);
+function getEvolutionTargetYms(allUnfilteredPeriod) {
   const allYms = [...new Set(allUnfilteredPeriod.map(r => r.ym))].sort();
   const lastYm = allYms[allYms.length - 1] || "2026-01";
 
@@ -913,28 +939,41 @@ function renderEvolutionChart() {
   }
 
   let targetYms = [];
+  let windowPill = "";
+  let subtitle = "";
+
   if (hasSpecificMonth) {
     const [ay, am] = anchorYm.split("-").map(Number);
     for (let i = 12; i >= 0; i--) {
       const d = new Date(ay, am - 1 - i, 1);
       targetYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
-    document.getElementById("pillWindow").textContent = `Ventana 13M (hasta ${anchorYm}): ${targetYms[0]} a ${targetYms[12]}`;
-    document.getElementById("evoSubtitle").textContent = `${anchorYm} y los 12 meses anteriores (sin meses posteriores a ${anchorYm})`;
+    windowPill = `Ventana 13M (hasta ${anchorYm}): ${targetYms[0]} a ${targetYms[12]}`;
+    subtitle = `${anchorYm} y los 12 meses anteriores (sin meses posteriores a ${anchorYm})`;
   } else if (state.evoMode === "12M") {
     const [ly, lm] = anchorYm.split("-").map(Number);
     for (let i = 11; i >= 0; i--) {
       const d = new Date(ly, lm - 1 - i, 1);
       targetYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
-    document.getElementById("pillWindow").textContent = `Ventana 12M: ${targetYms[0]} a ${targetYms[11]}`;
-    document.getElementById("evoSubtitle").textContent = `Últimos 12 meses anclados a ${anchorYm}`;
+    windowPill = `Ventana 12M: ${targetYms[0]} a ${targetYms[11]}`;
+    subtitle = `Últimos 12 meses anclados a ${anchorYm}`;
   } else {
     const y = hasSpecificYear ? Number(state.year) : Number(lastYm.split("-")[0]);
     for (let m = 1; m <= 12; m++) targetYms.push(`${y}-${String(m).padStart(2, "0")}`);
-    document.getElementById("pillWindow").textContent = `Año calendario: ${y}`;
-    document.getElementById("evoSubtitle").textContent = `Evolución mensual Enero – Diciembre ${y}`;
+    windowPill = `Año calendario: ${y}`;
+    subtitle = `Evolución mensual Enero – Diciembre ${y}`;
   }
+
+  return { targetYms, anchorYm, windowPill, subtitle };
+}
+
+function renderEvolutionChart() {
+  const allUnfilteredPeriod = getBaseFilteredRows(true, false);
+  const { targetYms, windowPill, subtitle } = getEvolutionTargetYms(allUnfilteredPeriod);
+
+  document.getElementById("pillWindow").textContent = windowPill;
+  document.getElementById("evoSubtitle").textContent = subtitle;
 
   const map = {};
   targetYms.forEach(ym => map[ym] = { ing: 0, gas: 0 });
@@ -978,6 +1017,29 @@ function renderEvolutionChart() {
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
+      onClick: (event, els, chart) => {
+        let idx = -1;
+        if (els && els.length > 0) {
+          idx = els[0].index;
+        } else {
+          const pts = chart.getElementsAtEventForMode(event, "index", { intersect: false }, true);
+          if (pts && pts.length > 0) idx = pts[0].index;
+        }
+        if (idx >= 0 && targetYms[idx]) {
+          const [yStr, mStr] = targetYms[idx].split("-");
+          const clickedYear = String(Number(yStr));
+          const clickedMonth = String(Number(mStr));
+          const isSameMonth = state.month === clickedMonth && (state.year === "ALL" || state.year === clickedYear);
+          if (isSameMonth) {
+            state.month = "ALL";
+          } else {
+            state.year = clickedYear;
+            state.month = clickedMonth;
+          }
+          populateGlobalSelectors();
+          renderAll();
+        }
+      },
       plugins: {
         legend: { labels: { color: textColor } },
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } }
@@ -1002,6 +1064,18 @@ function renderDonutChart(rows) {
   const palette = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#64748b"];
   const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
 
+  const selectMacroFilter = (macroName) => {
+    state.hierType = targetType;
+    if (state.macro === macroName && !state.cat && !state.tag) {
+      state.macro = "";
+    } else {
+      state.macro = macroName;
+      state.cat = "";
+      state.tag = "";
+    }
+    renderAll();
+  };
+
   if (charts.macro) charts.macro.destroy();
   charts.macro = new Chart(document.getElementById("chartMacro"), {
     type: "doughnut",
@@ -1014,18 +1088,43 @@ function renderDonutChart(rows) {
       onClick: (_, els) => {
         if (els.length > 0) {
           const clickedMacro = sorted[els[0].index][0];
-          state.hierType = targetType;
-          state.macro = clickedMacro;
-          state.cat = "";
-          state.tag = "";
-          renderAll();
+          selectMacroFilter(clickedMacro);
         }
       },
       plugins: {
-        legend: { position: "right", labels: { color: textColor, boxWidth: 12, font: { size: 11 } } },
+        legend: {
+          position: "right",
+          labels: { color: textColor, boxWidth: 12, font: { size: 11 } },
+          onClick: (_, legendItem) => {
+            const idx = legendItem.index;
+            if (sorted[idx]) selectMacroFilter(sorted[idx][0]);
+          }
+        },
         tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtMoney(ctx.parsed)}` } }
       }
     }
+  });
+
+  // Píldoras interactivas debajo del gráfico (color + etiqueta de Macro-Categoría) para clic directo en cualquier dispositivo
+  const canvasEl = document.getElementById("chartMacro");
+  let pillsContainer = document.getElementById("macroClickPills");
+  if (!pillsContainer) {
+    pillsContainer = document.createElement("div");
+    pillsContainer.id = "macroClickPills";
+    pillsContainer.className = "legend-pills";
+    canvasEl.parentElement.insertAdjacentElement("afterend", pillsContainer);
+  }
+  pillsContainer.innerHTML = sorted.map(([macroName, val], i) => {
+    const color = palette[i % palette.length];
+    const isSel = state.macro === macroName;
+    return `<button type="button" class="legend-pill ${isSel ? "selected" : ""}" data-macro="${macroName.replace(/"/g, "&quot;")}" title="Filtrar por ${macroName.replace(/"/g, "&quot;")}">
+      <span class="legend-swatch" style="background:${color};"></span>
+      <span>${macroName} (${fmtMoney(val)})</span>
+    </button>`;
+  }).join("");
+
+  pillsContainer.querySelectorAll(".legend-pill").forEach(btn => {
+    btn.addEventListener("click", () => selectMacroFilter(btn.dataset.macro));
   });
 }
 
@@ -1123,6 +1222,73 @@ function renderHierarchySection(rows) {
       }
     }
   });
+
+  renderHierarchyExpenseEvolutionChart();
+}
+
+function renderHierarchyExpenseEvolutionChart() {
+  const allRowsBase = getBaseFilteredRows(true, false);
+  const { targetYms, windowPill, subtitle } = getEvolutionTargetYms(allRowsBase);
+
+  const scopeParts = [];
+  if (state.macro) scopeParts.push(state.macro);
+  if (state.cat) scopeParts.push(state.cat);
+  if (state.tag) scopeParts.push(state.tag);
+  const scopeLabel = scopeParts.length > 0 ? scopeParts.join(" → ") : "Todos los Gastos";
+
+  const titleEl = document.getElementById("hierEvoTitle");
+  const subEl = document.getElementById("hierEvoSubtitle");
+  const winEl = document.getElementById("hierEvoWindow");
+  if (titleEl) titleEl.textContent = `Evolución Mensual del Gasto — ${scopeLabel}`;
+  if (subEl) subEl.textContent = `Horizonte sincronizado: ${subtitle}`;
+  if (winEl) winEl.textContent = windowPill;
+
+  const map = {};
+  targetYms.forEach(ym => { map[ym] = 0; });
+
+  allRowsBase.forEach(r => {
+    if (r.tipo !== "GASTO") return;
+    if (state.macro && r.macro !== state.macro) return;
+    if (state.cat && r.cat !== state.cat) return;
+    if (state.tag && r.tag !== state.tag) return;
+    if (Object.prototype.hasOwnProperty.call(map, r.ym)) {
+      map[r.ym] += amt(r);
+    }
+  });
+
+  const labels = targetYms.map(ym => {
+    const [y, m] = ym.split("-").map(Number);
+    return `${MONTH_SHORT[m - 1]} ${y}`;
+  });
+  const dataGas = targetYms.map(ym => map[ym]);
+
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+
+  if (charts.hierEvo) charts.hierEvo.destroy();
+  charts.hierEvo = new Chart(document.getElementById("chartHierEvo"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: `Gasto (${scopeLabel})`,
+        data: dataGas,
+        backgroundColor: "rgba(244, 63, 94, 0.82)",
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } }
+      },
+      scales: {
+        x: { ticks: { color: textColor }, grid: { display: false } },
+        y: { ticks: { color: textColor, callback: v => fmtMoney(v) }, grid: { color: gridColor } }
+      }
+    }
+  });
 }
 
 function renderBalanceTable(rows) {
@@ -1136,9 +1302,19 @@ function renderBalanceTable(rows) {
 
   const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
   const tbody = document.getElementById("tbodyBalance");
-  tbody.innerHTML = yms.map(ym => {
+
+  if (yms.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
+    return;
+  }
+
+  let totIng = 0, totGas = 0, totPat = 0;
+  const rowsHtml = yms.map(ym => {
     const [y, m] = ym.split("-").map(Number);
     const { ing, gas, pat } = byYm[ym];
+    totIng += ing;
+    totGas += gas;
+    totPat += pat;
     const net = ing - gas + pat;
     const margin = ing > 0 ? `${((net / ing) * 100).toFixed(1)}%` : "—";
     return `<tr>
@@ -1149,7 +1325,22 @@ function renderBalanceTable(rows) {
       <td class="num ${net >= 0 ? "pos" : "neg"}">${fmtMoney(net)}</td>
       <td class="num">${margin}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
+  }).join("");
+
+  const totNet = totIng - totGas + totPat;
+  const totMargin = totIng > 0 ? `${((totNet / totIng) * 100).toFixed(1)}%` : "—";
+  const totalRowHtml = `<tfoot>
+    <tr>
+      <td>TOTAL</td>
+      <td class="num pos">${fmtMoney(totIng)}</td>
+      <td class="num neg">${fmtMoney(totGas)}</td>
+      <td class="num pat">${fmtSignedMoney(totPat)}</td>
+      <td class="num ${totNet >= 0 ? "pos" : "neg"}">${fmtMoney(totNet)}</td>
+      <td class="num">${totMargin}</td>
+    </tr>
+  </tfoot>`;
+
+  tbody.innerHTML = rowsHtml + totalRowHtml;
 }
 
 function renderTransactionsTable(rows) {
@@ -1165,7 +1356,31 @@ function renderTransactionsTable(rows) {
     return true;
   });
 
-  list.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const dirMult = state.txSortDir === "asc" ? 1 : -1;
+  list.sort((a, b) => {
+    if (state.txSortField === "monto") {
+      const va = Math.abs(amt(a));
+      const vb = Math.abs(amt(b));
+      if (va !== vb) return (va - vb) * dirMult;
+      return b.fecha.localeCompare(a.fecha);
+    }
+    const cmp = a.fecha.localeCompare(b.fecha);
+    if (cmp !== 0) return cmp * dirMult;
+    return Math.abs(amt(b)) - Math.abs(amt(a));
+  });
+
+  const dateIcon = document.getElementById("sortDateIcon");
+  const amtIcon = document.getElementById("sortAmountIcon");
+  if (dateIcon && amtIcon) {
+    if (state.txSortField === "monto") {
+      dateIcon.textContent = "↕";
+      amtIcon.textContent = state.txSortDir === "desc" ? "↓" : "↑";
+    } else {
+      dateIcon.textContent = state.txSortDir === "desc" ? "↓" : "↑";
+      amtIcon.textContent = "↕";
+    }
+  }
+
   const slice = list.slice(0, 300);
 
   document.getElementById("tbodyTx").innerHTML = slice.map(r => {
@@ -1307,6 +1522,26 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("txtSearch").value = "";
     populateGlobalSelectors();
     renderAll();
+  });
+
+  document.getElementById("thSortDate").addEventListener("click", () => {
+    if (state.txSortField === "fecha") {
+      state.txSortDir = state.txSortDir === "desc" ? "asc" : "desc";
+    } else {
+      state.txSortField = "fecha";
+      state.txSortDir = "desc";
+    }
+    renderTransactionsTable(getBaseFilteredRows(false, true));
+  });
+
+  document.getElementById("thSortAmount").addEventListener("click", () => {
+    if (state.txSortField === "monto") {
+      state.txSortDir = state.txSortDir === "desc" ? "asc" : "desc";
+    } else {
+      state.txSortField = "monto";
+      state.txSortDir = "desc";
+    }
+    renderTransactionsTable(getBaseFilteredRows(false, true));
   });
 
   document.getElementById("txtSearch").addEventListener("input", e => {
