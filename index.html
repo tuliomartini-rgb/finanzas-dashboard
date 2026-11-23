@@ -440,7 +440,10 @@
         <div class="sec-sub">Listado filtrado por período, cuentas y jerarquía seleccionada (mostrando hasta 300 más recientes)</div>
         <div class="sec-meta" id="metaTx">Período: -- • Cuentas: --</div>
       </div>
-      <input type="text" id="txtSearch" placeholder="Buscar en descripción, etiqueta o cuenta..." style="min-width:260px;" />
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+        <span class="pill-muted" id="txSubtotalPill">Subtotal filtrado: --</span>
+        <input type="text" id="txtSearch" placeholder="Buscar en descripción, etiqueta o cuenta..." style="min-width:260px;" />
+      </div>
     </div>
     <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
       <table>
@@ -457,6 +460,7 @@
           </tr>
         </thead>
         <tbody id="tbodyTx"></tbody>
+        <tfoot id="tfootTx"></tfoot>
       </table>
     </div>
   </section>
@@ -1235,33 +1239,62 @@ function renderHierarchyExpenseEvolutionChart() {
   if (state.macro) scopeParts.push(state.macro);
   if (state.cat) scopeParts.push(state.cat);
   if (state.tag) scopeParts.push(state.tag);
-  const scopeLabel = scopeParts.length > 0 ? scopeParts.join(" → ") : "Todos los Gastos";
+  const scopeLabel = scopeParts.length > 0 ? scopeParts.join(" → ") : "Selección completa";
+
+  const showIng = (state.scope === "INGRESO") || (state.scope === "ALL" && state.hierType === "INGRESO");
+  const showGas = (state.scope === "GASTO") || (state.scope === "ALL" && state.hierType === "GASTO");
+
+  const modeLabel = showIng && showGas
+    ? "Ingresos y Gastos"
+    : (showIng ? "Ingresos" : "Gastos");
 
   const titleEl = document.getElementById("hierEvoTitle");
   const subEl = document.getElementById("hierEvoSubtitle");
   const winEl = document.getElementById("hierEvoWindow");
-  if (titleEl) titleEl.textContent = `Evolución Mensual del Gasto — ${scopeLabel}`;
+  if (titleEl) titleEl.textContent = `Evolución Mensual (${modeLabel}) — ${scopeLabel}`;
   if (subEl) subEl.textContent = `Horizonte sincronizado: ${subtitle}`;
   if (winEl) winEl.textContent = windowPill;
 
-  const map = {};
-  targetYms.forEach(ym => { map[ym] = 0; });
+  const mapGas = {};
+  const mapIng = {};
+  targetYms.forEach(ym => {
+    mapGas[ym] = 0;
+    mapIng[ym] = 0;
+  });
 
   allRowsBase.forEach(r => {
-    if (r.tipo !== "GASTO") return;
     if (state.macro && r.macro !== state.macro) return;
     if (state.cat && r.cat !== state.cat) return;
     if (state.tag && r.tag !== state.tag) return;
-    if (Object.prototype.hasOwnProperty.call(map, r.ym)) {
-      map[r.ym] += amt(r);
-    }
+    if (!Object.prototype.hasOwnProperty.call(mapGas, r.ym)) return;
+    if (r.tipo === "GASTO") mapGas[r.ym] += amt(r);
+    else if (r.tipo === "INGRESO") mapIng[r.ym] += amt(r);
   });
 
   const labels = targetYms.map(ym => {
     const [y, m] = ym.split("-").map(Number);
     return `${MONTH_SHORT[m - 1]} ${y}`;
   });
-  const dataGas = targetYms.map(ym => map[ym]);
+  const dataGas = targetYms.map(ym => mapGas[ym]);
+  const dataIng = targetYms.map(ym => mapIng[ym]);
+
+  const datasets = [];
+  if (showGas) {
+    datasets.push({
+      label: `Gasto (${scopeLabel})`,
+      data: dataGas,
+      backgroundColor: "rgba(244, 63, 94, 0.82)",
+      borderRadius: 5
+    });
+  }
+  if (showIng) {
+    datasets.push({
+      label: `Ingreso (${scopeLabel})`,
+      data: dataIng,
+      backgroundColor: "rgba(16, 185, 129, 0.82)",
+      borderRadius: 5
+    });
+  }
 
   const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
@@ -1269,15 +1302,7 @@ function renderHierarchyExpenseEvolutionChart() {
   if (charts.hierEvo) charts.hierEvo.destroy();
   charts.hierEvo = new Chart(document.getElementById("chartHierEvo"), {
     type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: `Gasto (${scopeLabel})`,
-        data: dataGas,
-        backgroundColor: "rgba(244, 63, 94, 0.82)",
-        borderRadius: 5
-      }]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -1400,6 +1425,64 @@ function renderTransactionsTable(rows) {
   }
 
   const slice = list.slice(0, 300);
+
+  let subtotalAll = 0;
+  let ingSub = 0, gasSub = 0, patSub = 0;
+  list.forEach(r => {
+    const v = amt(r);
+    if (r.tipo === "INGRESO") { ingSub += v; subtotalAll += v; }
+    else if (r.tipo === "GASTO") { gasSub += v; subtotalAll -= v; }
+    else if (r.tipo === "PATRIMONIAL") { patSub += v; subtotalAll += v; }
+  });
+
+  const subPill = document.getElementById("txSubtotalPill");
+  const tfootTx = document.getElementById("tfootTx");
+  if (subPill) {
+    if (list.length === 0) {
+      subPill.textContent = "Subtotal filtrado (0 ops): $0";
+    } else if (ingSub > 0 && gasSub === 0 && patSub === 0) {
+      subPill.textContent = `Subtotal Ingresos (${list.length} ops): ${fmtMoney(ingSub)}`;
+    } else if (gasSub > 0 && ingSub === 0 && patSub === 0) {
+      subPill.textContent = `Subtotal Gastos (${list.length} ops): ${fmtMoney(gasSub)}`;
+    } else if (patSub !== 0 && ingSub === 0 && gasSub === 0) {
+      subPill.textContent = `Subtotal Patrimonial (${list.length} ops): ${fmtSignedMoney(patSub)}`;
+    } else {
+      subPill.textContent = `Flujo neto filtrado (${list.length} ops): ${fmtSignedMoney(subtotalAll)} (Ing ${fmtMoney(ingSub)} · Gas ${fmtMoney(gasSub)})`;
+    }
+  }
+
+  if (tfootTx) {
+    if (list.length === 0) {
+      tfootTx.innerHTML = "";
+    } else {
+      const hasMixedTypes = (ingSub > 0 ? 1 : 0) + (gasSub > 0 ? 1 : 0) + (patSub !== 0 ? 1 : 0) > 1;
+      const footLabel = list.length > 300
+        ? `SUBTOTAL FILTRADO (${list.length.toLocaleString("es-AR")} ops · top 300 visibles)`
+        : `SUBTOTAL FILTRADO (${list.length.toLocaleString("es-AR")} ops)`;
+
+      let footValHtml = "";
+      let footClass = "";
+      if (!hasMixedTypes) {
+        if (ingSub > 0) { footValHtml = fmtMoney(ingSub); footClass = "pos"; }
+        else if (gasSub > 0) { footValHtml = fmtMoney(gasSub); footClass = "neg"; }
+        else { footValHtml = fmtSignedMoney(patSub); footClass = "pat"; }
+      } else {
+        footValHtml = fmtSignedMoney(subtotalAll);
+        footClass = subtotalAll >= 0 ? "pos" : "neg";
+      }
+
+      const detailParts = [];
+      if (ingSub > 0) detailParts.push(`Ing: ${fmtMoney(ingSub)}`);
+      if (gasSub > 0) detailParts.push(`Gas: ${fmtMoney(gasSub)}`);
+      if (patSub !== 0) detailParts.push(`Pat: ${fmtSignedMoney(patSub)}`);
+      const detailText = hasMixedTypes && detailParts.length > 0 ? ` (${detailParts.join(" | ")})` : "";
+
+      tfootTx.innerHTML = `<tr>
+        <td colspan="7">${footLabel}${detailText}</td>
+        <td class="num ${footClass}">${footValHtml}</td>
+      </tr>`;
+    }
+  }
 
   document.getElementById("tbodyTx").innerHTML = slice.map(r => {
     const badgeClass = r.tipo === "INGRESO" ? "tag-green" : (r.tipo === "GASTO" ? "tag-red" : "tag-amber");
