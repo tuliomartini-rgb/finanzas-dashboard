@@ -214,7 +214,28 @@
     th.sortable:hover { color: var(--text); }
     tfoot td { background: var(--bg-card-2); font-weight: 800; border-top: 2px solid var(--border); }
 
-  </style>
+  
+    /* Navigation Tabs */
+    .tabs-bar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 8px 12px; box-shadow: var(--shadow);
+    }
+    .tabs-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tab-btn {
+      border: 1px solid transparent; background: transparent; color: var(--text-muted);
+      padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--bg-card-2); }
+    .tab-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+    .tab-panel { display: none; flex-direction: column; gap: 18px; }
+    .tab-panel.active { display: flex; }
+    .tag-blue { background: var(--primary-soft); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
+    .tag-purple { background: rgba(139, 92, 246, 0.16); color: #a78bfa; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
+</style>
 </head>
 <body>
 <div class="container">
@@ -313,184 +334,374 @@
     </div>
   </section>
 
-  <!-- KPIs -->
-  <section class="kpi-grid">
-    <div class="kpi">
-      <div class="kpi-top"><span>INGRESOS</span><span class="tag-green">INGRESOS</span></div>
-      <div class="kpi-val pos" id="kpiIngresos">--</div>
-      <div class="kpi-sub"><span id="kpiIngOps">0 ops</span> • <span id="kpiIngMeta">Período seleccionado</span></div>
+  <!-- TABS NAVIGATION -->
+  <nav class="tabs-bar" aria-label="Secciones del Dashboard">
+    <div class="tabs-list" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="flow" role="tab" aria-selected="true">
+        Flujo Operativo y Resultados
+      </button>
+      <button type="button" class="tab-btn" data-tab="patrimony" role="tab" aria-selected="false">
+        Balance Patrimonial y Cash (Activo · Inversión · Pasivo · Transferencia)
+      </button>
     </div>
-    <div class="kpi">
-      <div class="kpi-top"><span>GASTOS</span><span class="tag-red">GASTOS</span></div>
-      <div class="kpi-val neg" id="kpiGastos">--</div>
-      <div class="kpi-sub"><span id="kpiGasOps">0 ops</span> • <span id="kpiGasMeta">Período seleccionado</span></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-top"><span>MOVIMIENTOS PATRIMONIALES</span><span class="tag-amber">PATRIMONIAL</span></div>
-      <div class="kpi-val pat" id="kpiPatrimonial">--</div>
-      <div class="kpi-sub"><span id="kpiPatOps">0 ops</span> • <span id="kpiPatMeta">Con signo (+ / -)</span></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-top"><span>FLUJO NETO (INGRESOS - GASTOS +- PATRIMONIAL)</span><span class="badge" id="kpiMarginBadge">0% margen</span></div>
-      <div class="kpi-val" id="kpiNeto">--</div>
-      <div class="kpi-sub" id="kpiNetoSub">Ingresos - Gastos + Patrimonial</div>
-    </div>
-  </section>
+    <span class="pill-muted" id="activeTabHint">Vista operativa: Ingresos y Gastos</span>
+  </nav>
 
-  <!-- MAIN CHARTS -->
-  <section class="grid-2">
-    <div class="card">
+  <!-- ==================== TAB 1: FLUJO OPERATIVO ==================== -->
+  <div class="tab-panel active" id="panel-flow" role="tabpanel">
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-top"><span>INGRESOS</span><span class="tag-green">INGRESOS</span></div>
+        <div class="kpi-val pos" id="kpiIngresos">--</div>
+        <div class="kpi-sub"><span id="kpiIngOps">0 ops</span> • <span id="kpiIngMeta">Período seleccionado</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span>GASTOS</span><span class="tag-red">GASTOS</span></div>
+        <div class="kpi-val neg" id="kpiGastos">--</div>
+        <div class="kpi-sub"><span id="kpiGasOps">0 ops</span> • <span id="kpiGasMeta">Período seleccionado</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span>FLUJO OPERATIVO (INGRESOS - GASTOS)</span><span class="badge" id="kpiMarginBadge">0% margen</span></div>
+        <div class="kpi-val" id="kpiOpNeto">--</div>
+        <div class="kpi-sub" id="kpiOpSub">Resultado corriente sin patrimoniales</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span>NETO PATRIMONIAL (ACT+INV+PAS+TRF)</span><span class="tag-amber">PATRIMONIAL</span></div>
+        <div class="kpi-val pat" id="kpiFlowPatCash">--</div>
+        <div class="kpi-sub"><span id="kpiFlowPatOps">0 ops</span> • <span id="kpiFlowPatMeta">Neto movimientos no operativos</span></div>
+      </div>
+    </section>
+
+    <!-- MAIN CHARTS -->
+    <section class="grid-2">
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Evolución Temporal Mensual</div>
+            <div class="sec-sub" id="evoSubtitle">Últimos 12 meses anclados al último mes disponible</div>
+          </div>
+          <div class="segmented" id="evoModeToggle">
+            <button data-mode="12M" class="active">12 Meses</button>
+            <button data-mode="YEAR">Año Seleccionado</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="chartEvo"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Distribución por Macro-Categoría</div>
+            <div class="sec-sub">Hacé clic en una porción para filtrar el análisis jerárquico</div>
+          </div>
+          <span class="badge" id="donutTypeBadge">GASTOS</span>
+        </div>
+        <div class="chart-box"><canvas id="chartMacro"></canvas></div>
+      </div>
+    </section>
+
+    <!-- HIERARCHICAL ANALYSIS: MACRO -> CATEGORIA -> ETIQUETA -->
+    <section class="card">
       <div class="sec-head">
         <div>
-          <div class="sec-title">Evolución Temporal Mensual</div>
-          <div class="sec-sub" id="evoSubtitle">Últimos 12 meses anclados al último mes disponible</div>
+          <div class="sec-title">Análisis Jerárquico: Macro-Categoría → Categoría → Etiqueta</div>
+          <div class="sec-sub">Explorá el desglose cruzado por los 3 niveles de clasificación</div>
+          <div class="sec-meta" id="metaHierarchy">Período: -- • Cuentas: --</div>
         </div>
-        <div class="segmented" id="evoModeToggle">
-          <button data-mode="12M" class="active">12 Meses</button>
-          <button data-mode="YEAR">Año Seleccionado</button>
+        <button id="btnResetHier" style="font-size:12px;">↺ Reiniciar selección</button>
+      </div>
+
+      <div class="hier-controls">
+        <div class="field">
+          <label for="selMacro">1. Macro-Categoría</label>
+          <select id="selMacro"><option value="">Todas las Macro-Categorías</option></select>
+        </div>
+        <div class="field">
+          <label for="selCat">2. Categoría</label>
+          <select id="selCat"><option value="">Todas las Categorías</option></select>
+        </div>
+        <div class="field">
+          <label for="selTag">3. Etiqueta</label>
+          <select id="selTag"><option value="">Todas las Etiquetas</option></select>
+        </div>
+        <div class="field">
+          <label for="selHierType">Tipo a analizar</label>
+          <select id="selHierType">
+            <option value="GASTO">Gastos</option>
+            <option value="INGRESO">Ingresos</option>
+          </select>
         </div>
       </div>
-      <div class="chart-box"><canvas id="chartEvo"></canvas></div>
-    </div>
 
-    <div class="card">
+      <div class="breadcrumbs" id="hierBreadcrumbs"></div>
+
+      <div class="grid-2">
+        <div>
+          <div class="sec-sub" style="margin-bottom:6px; font-weight:700;" id="hierChartTitle">Top conceptos del nivel actual</div>
+          <div class="chart-box-sm"><canvas id="chartHier"></canvas></div>
+        </div>
+        <div class="table-wrap" style="max-height:285px; overflow-y:auto; margin-top:0;">
+          <table>
+            <thead>
+              <tr>
+                <th id="hierColName">Macro-Categoría</th>
+                <th class="num">Ops</th>
+                <th class="num">Monto</th>
+                <th class="num">% Part.</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHier"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+        <div class="sec-head" style="margin-bottom:8px;">
+          <div>
+            <div class="sec-title" style="font-size:14.5px;" id="hierEvoTitle">Evolución Mensual (Selección Jerárquica)</div>
+            <div class="sec-sub" id="hierEvoSubtitle">Mismo horizonte temporal que Evolución Temporal Mensual</div>
+          </div>
+          <span class="pill-muted" id="hierEvoWindow">--</span>
+        </div>
+        <div class="chart-box-sm"><canvas id="chartHierEvo"></canvas></div>
+      </div>
+    </section>
+
+    <!-- INDIVIDUAL TRANSACTIONS -->
+    <section class="card">
       <div class="sec-head">
         <div>
-          <div class="sec-title">Distribución por Macro-Categoría</div>
-          <div class="sec-sub">Hacé clic en una porción para filtrar el análisis jerárquico</div>
+          <div class="sec-title">Transacciones Individuales</div>
+          <div class="sec-sub">Listado filtrado por período, cuentas y jerarquía seleccionada (mostrando hasta 300 más recientes)</div>
+          <div class="sec-meta" id="metaTx">Período: -- • Cuentas: --</div>
         </div>
-        <span class="badge" id="donutTypeBadge">GASTOS</span>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+          <span class="pill-muted" id="txSubtotalPill">Subtotal filtrado: --</span>
+          <input type="text" id="txtSearch" placeholder="Buscar en descripción, etiqueta o cuenta..." style="min-width:260px;" />
+        </div>
       </div>
-      <div class="chart-box"><canvas id="chartMacro"></canvas></div>
-    </div>
-  </section>
-
-  <!-- HIERARCHICAL ANALYSIS: MACRO -> CATEGORIA -> ETIQUETA -->
-  <section class="card">
-    <div class="sec-head">
-      <div>
-        <div class="sec-title">Análisis Jerárquico: Macro-Categoría → Categoría → Etiqueta</div>
-        <div class="sec-sub">Explorá el desglose cruzado por los 3 niveles de clasificación</div>
-        <div class="sec-meta" id="metaHierarchy">Período: -- • Cuentas: --</div>
-      </div>
-      <button id="btnResetHier" style="font-size:12px;">↺ Reiniciar selección</button>
-    </div>
-
-    <div class="hier-controls">
-      <div class="field">
-        <label for="selMacro">1. Macro-Categoría</label>
-        <select id="selMacro"><option value="">Todas las Macro-Categorías</option></select>
-      </div>
-      <div class="field">
-        <label for="selCat">2. Categoría</label>
-        <select id="selCat"><option value="">Todas las Categorías</option></select>
-      </div>
-      <div class="field">
-        <label for="selTag">3. Etiqueta</label>
-        <select id="selTag"><option value="">Todas las Etiquetas</option></select>
-      </div>
-      <div class="field">
-        <label for="selHierType">Tipo a analizar</label>
-        <select id="selHierType">
-          <option value="GASTO">Gastos</option>
-          <option value="INGRESO">Ingresos</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="breadcrumbs" id="hierBreadcrumbs"></div>
-
-    <div class="grid-2">
-      <div>
-        <div class="sec-sub" style="margin-bottom:6px; font-weight:700;" id="hierChartTitle">Top conceptos del nivel actual</div>
-        <div class="chart-box-sm"><canvas id="chartHier"></canvas></div>
-      </div>
-      <div class="table-wrap" style="max-height:285px; overflow-y:auto; margin-top:0;">
+      <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
         <table>
           <thead>
             <tr>
-              <th id="hierColName">Macro-Categoría</th>
-              <th class="num">Ops</th>
-              <th class="num">Monto</th>
-              <th class="num">% Part.</th>
+              <th class="sortable" id="thSortDate" title="Ordenar por Fecha">Fecha <span id="sortDateIcon">↓</span></th>
+              <th>Tipo</th>
+              <th>Cuenta</th>
+              <th>Macro-Categoría</th>
+              <th>Categoría</th>
+              <th>Etiqueta</th>
+              <th>Descripción</th>
+              <th class="num sortable" id="thSortAmount" title="Ordenar por Monto">Monto <span id="sortAmountIcon">↕</span></th>
             </tr>
           </thead>
-          <tbody id="tbodyHier"></tbody>
+          <tbody id="tbodyTx"></tbody>
+          <tfoot id="tfootTx"></tfoot>
         </table>
       </div>
-    </div>
+    </section>
 
-    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
-      <div class="sec-head" style="margin-bottom:8px;">
+    <!-- MONTHLY BALANCE TABLE -->
+    <section class="card">
+      <div class="sec-head">
         <div>
-          <div class="sec-title" style="font-size:14.5px;" id="hierEvoTitle">Evolución Mensual del Gasto (Selección Jerárquica)</div>
-          <div class="sec-sub" id="hierEvoSubtitle">Mismo horizonte temporal que Evolución Temporal Mensual</div>
+          <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
+          <div class="sec-sub">Comparativa mensual entre Ingresos, Gastos, Movimientos Patrimoniales y Flujo Neto</div>
+          <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
         </div>
-        <span class="pill-muted" id="hierEvoWindow">--</span>
       </div>
-      <div class="chart-box-sm"><canvas id="chartHierEvo"></canvas></div>
-    </div>
-  </section>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th class="num">Ingresos</th>
+              <th class="num">Gastos</th>
+              <th class="num">Patrimonial</th>
+              <th class="num">Flujo Neto</th>
+              <th class="num">Margen / Ahorro</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyBalance"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-  <!-- INDIVIDUAL TRANSACTIONS -->
-  <section class="card">
-    <div class="sec-head">
-      <div>
-        <div class="sec-title">Transacciones Individuales</div>
-        <div class="sec-sub">Listado filtrado por período, cuentas y jerarquía seleccionada (mostrando hasta 300 más recientes)</div>
-        <div class="sec-meta" id="metaTx">Período: -- • Cuentas: --</div>
+  <!-- ==================== TAB 2: BALANCE PATRIMONIAL Y CASH ==================== -->
+  <div class="tab-panel" id="panel-patrimony" role="tabpanel">
+    <section class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Balance entre Categorías Patrimoniales y Consumo de Cash</div>
+          <div class="sec-sub">Analizá separadamente <strong>ACTIVO</strong> (bienes/capex), <strong>INVERSION</strong> (cartera/FCI/comitente), <strong>PASIVO</strong> (préstamos/deudas) y <strong>TRANSFERENCIA</strong> (pases entre cuentas)</div>
+          <div class="sec-meta" id="metaPatrimony">Período: -- • Cuentas: --</div>
+        </div>
+        <div class="segmented" id="patTypeFilter">
+          <button data-ptype="ALL" class="active">Todos (4)</button>
+          <button data-ptype="ACTIVO">Activo</button>
+          <button data-ptype="INVERSION">Inversión</button>
+          <button data-ptype="PASIVO">Pasivo</button>
+          <button data-ptype="TRANSFERENCIA">Transferencia</button>
+        </div>
       </div>
-      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
-        <span class="pill-muted" id="txSubtotalPill">Subtotal filtrado: --</span>
-        <input type="text" id="txtSearch" placeholder="Buscar en descripción, etiqueta o cuenta..." style="min-width:260px;" />
-      </div>
-    </div>
-    <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th class="sortable" id="thSortDate" title="Ordenar por Fecha">Fecha <span id="sortDateIcon">↓</span></th>
-            <th>Tipo</th>
-            <th>Cuenta</th>
-            <th>Macro-Categoría</th>
-            <th>Categoría</th>
-            <th>Etiqueta</th>
-            <th>Descripción</th>
-            <th class="num sortable" id="thSortAmount" title="Ordenar por Monto">Monto <span id="sortAmountIcon">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="tbodyTx"></tbody>
-        <tfoot id="tfootTx"></tfoot>
-      </table>
-    </div>
-  </section>
 
-  <!-- MONTHLY BALANCE TABLE -->
-  <section class="card">
-    <div class="sec-head">
-      <div>
-        <div class="sec-title">Resumen Mensual de Balance y Flujo Neto</div>
-        <div class="sec-sub">Comparativa mensual entre Ingresos, Gastos, Patrimonial y Flujo Neto</div>
-        <div class="sec-meta" id="metaBalance">Período: -- • Cuentas: --</div>
+      <!-- KPIs PATRIMONIALES -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-top"><span>ACTIVO (CAPEX / BIENES)</span><span class="tag-amber">ACTIVO</span></div>
+          <div class="kpi-val pat" id="kpiPatActivo">--</div>
+          <div class="kpi-sub"><span id="kpiPatActivoOps">0 ops</span> • <span id="kpiPatActivoSplit">Entradas / Salidas</span></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>INVERSIÓN (CARTERA / FCI)</span><span class="tag-blue">INVERSION</span></div>
+          <div class="kpi-val" style="color:var(--primary);" id="kpiPatInversion">--</div>
+          <div class="kpi-sub"><span id="kpiPatInversionOps">0 ops</span> • <span id="kpiPatInversionSplit">Aportes / Rescates</span></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>PASIVO (PRÉSTAMOS / DEUDA)</span><span class="tag-red">PASIVO</span></div>
+          <div class="kpi-val neg" id="kpiPatPasivo">--</div>
+          <div class="kpi-sub"><span id="kpiPatPasivoOps">0 ops</span> • <span id="kpiPatPasivoSplit">Tomado / Cancelado</span></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>TRANSFERENCIA (PASES INTERNOS)</span><span class="tag-purple">TRANSFERENCIA</span></div>
+          <div class="kpi-val" style="color:#a78bfa;" id="kpiPatTransfer">--</div>
+          <div class="kpi-sub"><span id="kpiPatTransferOps">0 ops</span> • <span id="kpiPatTransferSplit">Entradas / Salidas</span></div>
+        </div>
       </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Mes</th>
-            <th class="num">Ingresos</th>
-            <th class="num">Gastos</th>
-            <th class="num">Patrimonial</th>
-            <th class="num">Flujo Neto</th>
-            <th class="num">Margen / Ahorro</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyBalance"></tbody>
-      </table>
-    </div>
-  </section>
 
+      <!-- CONSUMO DE CASH PATRIMONIAL -->
+      <div class="kpi-grid" style="margin-top:14px;">
+        <div class="kpi">
+          <div class="kpi-top"><span>CONSUMO DE CASH (ACTIVO + INV + PAS)</span><span class="tag-amber">SIN TRANSFERENCIA</span></div>
+          <div class="kpi-val" id="kpiCashPatNeto">--</div>
+          <div class="kpi-sub" id="kpiCashPatDesc">Neto de caja por activos, inversiones y pasivos</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>SALIDAS DE CASH PATRIMONIAL (SIGNO -)</span><span class="tag-red">OUTFLOW</span></div>
+          <div class="kpi-val neg" id="kpiCashPatOut">--</div>
+          <div class="kpi-sub" id="kpiCashPatOutDesc">Compras/aportes/cancelaciones que consumen liquidez</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top"><span>ENTRADAS DE CASH PATRIMONIAL (SIGNO +)</span><span class="tag-green">INFLOW</span></div>
+          <div class="kpi-val pos" id="kpiCashPatIn">--</div>
+          <div class="kpi-sub" id="kpiCashPatInDesc">Ventas/rescates/ingresos de capital que liberan liquidez</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS PATRIMONIALES -->
+    <section class="grid-2">
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Evolución Mensual Patrimonial y Consumo de Cash</div>
+            <div class="sec-sub">Comparativa mensual de Activo, Inversión, Pasivo, Transferencia y Flujo de Cash Patrimonial</div>
+          </div>
+          <span class="pill-muted" id="patEvoWindow">--</span>
+        </div>
+        <div class="chart-box"><canvas id="chartPatEvo"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Balance por Categoría / Etiqueta Patrimonial</div>
+            <div class="sec-sub">Consumo / Flujo neto por rubro dentro de las categorías patrimoniales</div>
+          </div>
+          <span class="badge" id="patBarBadge">NETO</span>
+        </div>
+        <div class="chart-box"><canvas id="chartPatCat"></canvas></div>
+      </div>
+    </section>
+
+    <!-- BALANCE TABLE BY CATEGORY -->
+    <section class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Balance por Tipo y Categoría Patrimonial</div>
+          <div class="sec-sub">Desglose de entradas (+), salidas (-), consumo/flujo neto y participación</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Macro-Categoría</th>
+              <th>Categoría</th>
+              <th>Etiqueta</th>
+              <th class="num">Ops</th>
+              <th class="num">Entradas (+)</th>
+              <th class="num">Salidas (-)</th>
+              <th class="num">Flujo Neto</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPatSummary"></tbody>
+          <tfoot id="tfootPatSummary"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- MONTHLY PATRIMONIAL & CASH CONSUMPTION TABLE -->
+    <section class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Resumen Mensual de Balance Patrimonial y Consumo de Cash</div>
+          <div class="sec-sub">Evolución mes a mes por tipo patrimonial y consumo neto de cash</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th class="num">Activo</th>
+              <th class="num">Inversión</th>
+              <th class="num">Pasivo</th>
+              <th class="num">Transferencia</th>
+              <th class="num">Consumo Cash (Act+Inv+Pas)</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPatMonthly"></tbody>
+          <tfoot id="tfootPatMonthly"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- PATRIMONIAL & TRANSFER TRANSACTIONS -->
+    <section class="card">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Movimientos Patrimoniales y Transferencias</div>
+          <div class="sec-sub">Detalle filtrable de Activo, Inversión, Pasivo y Transferencia (mostrando hasta 300 más recientes)</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+          <span class="pill-muted" id="patTxSubtotalPill">Subtotal patrimonial: --</span>
+          <input type="text" id="txtPatSearch" placeholder="Buscar activo, FCI, cuenta, transferencia..." style="min-width:260px;" />
+        </div>
+      </div>
+      <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Cuenta</th>
+              <th>Tipo Cuenta</th>
+              <th>Macro-Categoría</th>
+              <th>Categoría</th>
+              <th>Etiqueta</th>
+              <th>Descripción</th>
+              <th class="num">Monto</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPatTx"></tbody>
+          <tfoot id="tfootPatTx"></tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
 
 </div>
 
@@ -533,19 +744,22 @@ const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ9pE2
 const STORAGE_URL_KEY = "finanzas_movimientos_csv_url_v1";
 const STORAGE_THEME_KEY = "finanzas_dashboard_theme_v1";
 
+const PATRIMONIAL_TYPES = new Set(["ACTIVO", "INVERSION", "PASIVO", "TRANSFERENCIA", "PATRIMONIAL"]);
+
 const DEMO_ROWS = [
-  { fecha: "2026-09-10", year: 2026, month: 9, ym: "2026-09", tipo: "INGRESO", cuenta: "Banco Galicia", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios septiembre", usd: 19079, ars: 22894800 },
-  { fecha: "2026-09-15", year: 2026, month: 9, ym: "2026-09", tipo: "GASTO", cuenta: "Banco Galicia", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas y consumos", usd: 8875, ars: 10650000 },
-  { fecha: "2026-09-20", year: 2026, month: 9, ym: "2026-09", tipo: "PATRIMONIAL", cuenta: "Banco Galicia", macro: "Inversiones", cat: "Plazo Fijo / FCI", tag: "Rescate", desc: "Movimiento patrimonial neto", usd: 0, ars: 0 },
-  { fecha: "2026-01-10", year: 2026, month: 1, ym: "2026-01", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios mensuales", usd: 5200, ars: 6240000 },
-  { fecha: "2026-01-15", year: 2026, month: 1, ym: "2026-01", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas ordinarias", usd: 620, ars: 744000 },
-  { fecha: "2026-02-05", year: 2026, month: 2, ym: "2026-02", tipo: "INGRESO", cuenta: "Galicia USD", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios febrero", usd: 5175, ars: 6210000 },
-  { fecha: "2026-02-12", year: 2026, month: 2, ym: "2026-02", tipo: "GASTO", cuenta: "Visa Galicia", macro: "Vivienda y Servicios", cat: "Servicios", tag: "Luz y Gas", desc: "Edenor + Metrogas", usd: 195, ars: 234000 }
+  { fecha: "2026-09-10", year: 2026, month: 9, ym: "2026-09", tipo: "INGRESO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios septiembre", usd: 19079, ars: 22894800 },
+  { fecha: "2026-09-15", year: 2026, month: 9, ym: "2026-09", tipo: "GASTO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas y consumos", usd: 8875, ars: 10650000 },
+  { fecha: "2026-09-16", year: 2026, month: 9, ym: "2026-09", tipo: "ACTIVO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Patrimonio y Transferencias", cat: "ACTIVO", tag: "AUTOMOVIL", desc: "Pago unidad vehículo", usd: -12000, ars: -18000000 },
+  { fecha: "2026-09-18", year: 2026, month: 9, ym: "2026-09", tipo: "INVERSION", cuenta: "Galicia Inversiones", tipoCuenta: "Cuenta Inversion", macro: "Patrimonio y Transferencias", cat: "INVERSIONES", tag: "FCI", desc: "Suscripción FCI renta", usd: -2500, ars: -3750000 },
+  { fecha: "2026-09-19", year: 2026, month: 9, ym: "2026-09", tipo: "TRANSFERENCIA", cuenta: "MercadoPago", tipoCuenta: "Caja de Ahorros", macro: "Patrimonio y Transferencias", cat: "TRANSFER", tag: "TRANSFER", desc: "Pase interno entre cuentas", usd: 1500, ars: 2250000 }
 ];
 
 let state = {
   rows: [],
   isLive: false,
+  activeTab: "flow",
+  patTypeFilter: "ALL",
+  patSearch: "",
   currency: "USD",
   year: "ALL",
   month: "ALL",
@@ -562,9 +776,8 @@ let state = {
   txSortDir: "desc"
 };
 
-let charts = { evo: null, macro: null, hier: null, hierEvo: null };
+let charts = { evo: null, macro: null, hier: null, hierEvo: null, patEvo: null, patCat: null };
 
-/* ---------- CSV PARSER (RFC-4180) ---------- */
 function parseCSV(text) {
   const rows = [];
   let row = [], cell = "", inQuotes = false;
@@ -612,17 +825,31 @@ function parseNum(val) {
 function parseDateISO(raw) {
   const s = String(raw || "").trim();
   if (!s) return null;
-  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
   if (m) {
     const y = +m[1], mo = +m[2], d = +m[3];
     if (y >= 2000 && mo >= 1 && mo <= 12) return { y, mo, d, iso: `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`, ym: `${y}-${String(mo).padStart(2,"0")}` };
   }
-  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
   if (m) {
     const d = +m[1], mo = +m[2], y = +m[3];
     if (y >= 2000 && mo >= 1 && mo <= 12) return { y, mo, d, iso: `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`, ym: `${y}-${String(mo).padStart(2,"0")}` };
   }
   return null;
+}
+
+function normalizeTipo(rawTipo) {
+  const t = String(rawTipo || "").trim().toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (!t) return "";
+  if (t.includes("TRANSFER")) return "TRANSFERENCIA";
+  if (t.includes("INVERSION")) return "INVERSION";
+  if (t.includes("PASIVO")) return "PASIVO";
+  if (t.includes("ACTIVO")) return "ACTIVO";
+  if (t.includes("PATRIMON")) return "PATRIMONIAL";
+  if (t.includes("INGRESO")) return "INGRESO";
+  if (t.includes("GASTO")) return "GASTO";
+  return "";
 }
 
 function mapCsvRows(matrix) {
@@ -639,6 +866,7 @@ function mapCsvRows(matrix) {
   const iFecha = idx(["fecha", "date"]);
   const iTipo = idx(["tipo", "type"]);
   const iCuenta = idx(["cuenta", "medio", "account"]);
+  const iTipoCuenta = idx(["tipo_cuenta", "tipocuenta", "account_type"]);
   const iMacro = idx(["macro_categoria", "macrocategoria", "macro"]);
   const iCat = idx(["categoria", "category"]);
   const iTag = idx(["etiqueta", "tag", "subcategoria"]);
@@ -656,11 +884,7 @@ function mapCsvRows(matrix) {
     const d = parseDateISO(row[iFecha]);
     if (!d) continue;
 
-    const tipoRaw = String(row[iTipo] || "").trim().toUpperCase();
-    let tipo = "";
-    if (tipoRaw.includes("PATRIMON")) tipo = "PATRIMONIAL";
-    else if (tipoRaw.includes("INGRESO")) tipo = "INGRESO";
-    else if (tipoRaw.includes("GASTO")) tipo = "GASTO";
+    const tipo = normalizeTipo(row[iTipo]);
     if (!tipo) continue;
 
     const rawImporte = iImporte !== -1 ? parseNum(row[iImporte]) : 0;
@@ -674,20 +898,10 @@ function mapCsvRows(matrix) {
 
     if (moneda === "USD") {
       usd = usdCol !== 0 ? usdCol : rawImporte;
-      if (arsCol !== 0) {
-        ars = arsCol;
-      } else if (tcRaw > 0) {
-        ars = usd * tcRaw;
-      } else {
-        ars = usd;
-      }
+      ars = arsCol !== 0 ? arsCol : (tcRaw > 0 ? usd * tcRaw : usd);
     } else if (moneda === "ARS") {
       ars = arsCol !== 0 ? arsCol : rawImporte;
-      if (usdCol !== 0) {
-        usd = usdCol;
-      } else if (tcRaw > 0) {
-        usd = ars / tcRaw;
-      }
+      usd = usdCol !== 0 ? usdCol : (tcRaw > 0 ? ars / tcRaw : 0);
     } else {
       usd = usdCol;
       ars = arsCol !== 0 ? arsCol : rawImporte;
@@ -702,6 +916,7 @@ function mapCsvRows(matrix) {
       ym: d.ym,
       tipo,
       cuenta: String(row[iCuenta] || "Sin cuenta").trim() || "Sin cuenta",
+      tipoCuenta: iTipoCuenta !== -1 ? (String(row[iTipoCuenta] || "").trim() || "—") : "—",
       macro: String(row[iMacro] || "Sin Macro-Categoría").trim() || "Sin Macro-Categoría",
       cat: String(row[iCat] || "Sin Categoría").trim() || "Sin Categoría",
       tag: String(row[iTag] || "Sin Etiqueta").trim() || "Sin Etiqueta",
@@ -713,7 +928,6 @@ function mapCsvRows(matrix) {
   return out;
 }
 
-/* ---------- FORMATTERS ---------- */
 function fmtMoney(val, curr = state.currency) {
   const n = Number(val) || 0;
   const sign = n < 0 ? "-" : "";
@@ -734,7 +948,10 @@ function amt(r) {
   return state.currency === "USD" ? r.usd : r.ars;
 }
 
-/* ---------- FILTERING & SELECTORS ---------- */
+function isPatrimonialType(tipo) {
+  return PATRIMONIAL_TYPES.has(tipo);
+}
+
 function renderChronologicalMonthSelect(selMonth, yearLabel, selectedValue) {
   const orderedMonths = [...MONTHS_CHRONOLOGICAL].sort((a, b) => Number(a.num) - Number(b.num));
   selMonth.innerHTML = "";
@@ -771,12 +988,10 @@ function populateGlobalSelectors() {
   }
   selYear.value = state.year;
 
-  // Meses del año EN ORDEN CRONOLÓGICO ESTRICTO (01 - Enero a 12 - Diciembre)
   const selMonth = document.getElementById("selMonth");
   const yearLabel = state.year === "ALL" ? "Todos los años" : state.year;
   renderChronologicalMonthSelect(selMonth, yearLabel, state.month);
 
-  // Cuentas
   const accounts = [...new Set(state.rows.map(r => r.cuenta))].sort((a, b) => a.localeCompare(b, "es"));
   const selAccount = document.getElementById("selAccount");
   selAccount.innerHTML = `<option value="ALL">Todas las cuentas</option>` +
@@ -784,7 +999,6 @@ function populateGlobalSelectors() {
   if (state.account !== "ALL" && !accounts.includes(state.account)) state.account = "ALL";
   selAccount.value = state.account;
 
-  // Multi-exclude accounts
   const excludeList = document.getElementById("excludeList");
   excludeList.innerHTML = accounts.map(c => {
     const checked = state.excludedAccounts.has(c) ? "checked" : "";
@@ -811,10 +1025,24 @@ function updateExcludeLabel() {
 
 function getBaseFilteredRows(ignorePeriod = false, includePatrimonial = false) {
   return state.rows.filter(r => {
-    if (!includePatrimonial && r.tipo === "PATRIMONIAL") return false;
+    const isPat = isPatrimonialType(r.tipo);
+    if (!includePatrimonial && isPat) return false;
     if (state.account !== "ALL" && r.cuenta !== state.account) return false;
     if (state.excludedAccounts.has(r.cuenta)) return false;
     if (!includePatrimonial && state.scope !== "ALL" && r.tipo !== state.scope) return false;
+    if (!ignorePeriod) {
+      if (state.year !== "ALL" && r.year !== Number(state.year)) return false;
+      if (state.month !== "ALL" && r.month !== Number(state.month)) return false;
+    }
+    return true;
+  });
+}
+
+function getPatrimonialFilteredRows(ignorePeriod = false) {
+  return state.rows.filter(r => {
+    if (!isPatrimonialType(r.tipo)) return false;
+    if (state.account !== "ALL" && r.cuenta !== state.account) return false;
+    if (state.excludedAccounts.has(r.cuenta)) return false;
     if (!ignorePeriod) {
       if (state.year !== "ALL" && r.year !== Number(state.year)) return false;
       if (state.month !== "ALL" && r.month !== Number(state.month)) return false;
@@ -837,7 +1065,6 @@ function getPeriodAndAccountSummary() {
   return `Período: ${periodStr} • Cuentas: ${accStr}`;
 }
 
-/* ---------- HIERARCHY SELECTORS ---------- */
 function syncHierarchySelectors(rows) {
   if (state.scope === "INGRESO") state.hierType = "INGRESO";
   else if (state.scope === "GASTO") state.hierType = "GASTO";
@@ -870,10 +1097,10 @@ function syncHierarchySelectors(rows) {
   selTag.value = state.tag;
 }
 
-/* ---------- RENDER FUNCTIONS ---------- */
 function renderAll() {
   const rows = getBaseFilteredRows(false, false);
   const rowsWithPat = getBaseFilteredRows(false, true);
+  const patRows = getPatrimonialFilteredRows(false);
   const metaText = getPeriodAndAccountSummary();
 
   document.getElementById("badgeCurrency").textContent = state.currency;
@@ -881,35 +1108,36 @@ function renderAll() {
   document.getElementById("metaHierarchy").textContent = metaText;
   document.getElementById("metaBalance").textContent = metaText;
   document.getElementById("metaTx").textContent = metaText;
+  document.getElementById("metaPatrimony").textContent = metaText;
 
-  let ing = 0, gas = 0, pat = 0, ingOps = 0, gasOps = 0, patOps = 0;
+  let ing = 0, gas = 0, patNet = 0, ingOps = 0, gasOps = 0, patOps = 0;
   rowsWithPat.forEach(r => {
     const v = amt(r);
     if (r.tipo === "INGRESO") { ing += v; ingOps++; }
     else if (r.tipo === "GASTO") { gas += v; gasOps++; }
-    else if (r.tipo === "PATRIMONIAL") { pat += v; patOps++; }
+    else if (isPatrimonialType(r.tipo)) { patNet += v; patOps++; }
   });
-  const neto = ing - gas + pat;
-  const margin = ing > 0 ? ((neto / ing) * 100).toFixed(1) : "0.0";
+  const opNeto = ing - gas;
+  const margin = ing > 0 ? ((opNeto / ing) * 100).toFixed(1) : "0.0";
 
   document.getElementById("kpiIngresos").textContent = state.scope === "GASTO" ? "—" : fmtMoney(ing);
   document.getElementById("kpiIngOps").textContent = `${ingOps.toLocaleString("es-AR")} ops`;
   document.getElementById("kpiGastos").textContent = state.scope === "INGRESO" ? "—" : fmtMoney(gas);
   document.getElementById("kpiGasOps").textContent = `${gasOps.toLocaleString("es-AR")} ops`;
 
-  document.getElementById("kpiPatrimonial").textContent = fmtSignedMoney(pat);
-  document.getElementById("kpiPatOps").textContent = `${patOps.toLocaleString("es-AR")} ops`;
-
-  const elNeto = document.getElementById("kpiNeto");
+  const elOp = document.getElementById("kpiOpNeto");
   if (state.scope !== "ALL") {
-    elNeto.textContent = "—";
-    elNeto.className = "kpi-val";
+    elOp.textContent = "—";
+    elOp.className = "kpi-val";
     document.getElementById("kpiMarginBadge").textContent = "Vista filtrada";
   } else {
-    elNeto.textContent = fmtMoney(neto);
-    elNeto.className = "kpi-val " + (neto >= 0 ? "pos" : "neg");
+    elOp.textContent = fmtMoney(opNeto);
+    elOp.className = "kpi-val " + (opNeto >= 0 ? "pos" : "neg");
     document.getElementById("kpiMarginBadge").textContent = `${margin}% margen`;
   }
+
+  document.getElementById("kpiFlowPatCash").textContent = fmtSignedMoney(patNet);
+  document.getElementById("kpiFlowPatOps").textContent = `${patOps.toLocaleString("es-AR")} ops`;
 
   renderEvolutionChart();
   renderDonutChart(rows);
@@ -917,6 +1145,309 @@ function renderAll() {
   renderHierarchySection(rows);
   renderBalanceTable(rowsWithPat);
   renderTransactionsTable(rowsWithPat);
+  renderPatrimonialTab(patRows);
+}
+
+function renderPatrimonialTab(patRows) {
+  const stats = {
+    ACTIVO: { net: 0, inSum: 0, outSum: 0, ops: 0 },
+    INVERSION: { net: 0, inSum: 0, outSum: 0, ops: 0 },
+    PASIVO: { net: 0, inSum: 0, outSum: 0, ops: 0 },
+    TRANSFERENCIA: { net: 0, inSum: 0, outSum: 0, ops: 0 },
+    PATRIMONIAL: { net: 0, inSum: 0, outSum: 0, ops: 0 }
+  };
+
+  let cashPatNet = 0;
+  let cashPatIn = 0;
+  let cashPatOut = 0;
+
+  patRows.forEach(r => {
+    const v = amt(r);
+    const key = stats[r.tipo] ? r.tipo : "PATRIMONIAL";
+    stats[key].net += v;
+    stats[key].ops += 1;
+    if (v > 0) stats[key].inSum += v;
+    else if (v < 0) stats[key].outSum += v;
+
+    if (key !== "TRANSFERENCIA") {
+      cashPatNet += v;
+      if (v > 0) cashPatIn += v;
+      else if (v < 0) cashPatOut += v;
+    }
+  });
+
+  document.getElementById("kpiPatActivo").textContent = fmtSignedMoney(stats.ACTIVO.net);
+  document.getElementById("kpiPatActivoOps").textContent = `${stats.ACTIVO.ops.toLocaleString("es-AR")} ops`;
+  document.getElementById("kpiPatActivoSplit").textContent = `+: ${fmtMoney(stats.ACTIVO.inSum)} / -: ${fmtMoney(stats.ACTIVO.outSum)}`;
+
+  document.getElementById("kpiPatInversion").textContent = fmtSignedMoney(stats.INVERSION.net);
+  document.getElementById("kpiPatInversionOps").textContent = `${stats.INVERSION.ops.toLocaleString("es-AR")} ops`;
+  document.getElementById("kpiPatInversionSplit").textContent = `+: ${fmtMoney(stats.INVERSION.inSum)} / -: ${fmtMoney(stats.INVERSION.outSum)}`;
+
+  document.getElementById("kpiPatPasivo").textContent = fmtSignedMoney(stats.PASIVO.net);
+  document.getElementById("kpiPatPasivoOps").textContent = `${stats.PASIVO.ops.toLocaleString("es-AR")} ops`;
+  document.getElementById("kpiPatPasivoSplit").textContent = `+: ${fmtMoney(stats.PASIVO.inSum)} / -: ${fmtMoney(stats.PASIVO.outSum)}`;
+
+  document.getElementById("kpiPatTransfer").textContent = fmtSignedMoney(stats.TRANSFERENCIA.net);
+  document.getElementById("kpiPatTransferOps").textContent = `${stats.TRANSFERENCIA.ops.toLocaleString("es-AR")} ops`;
+  document.getElementById("kpiPatTransferSplit").textContent = `+: ${fmtMoney(stats.TRANSFERENCIA.inSum)} / -: ${fmtMoney(stats.TRANSFERENCIA.outSum)}`;
+
+  const elCashNet = document.getElementById("kpiCashPatNeto");
+  elCashNet.textContent = fmtSignedMoney(cashPatNet);
+  elCashNet.className = "kpi-val " + (cashPatNet >= 0 ? "pos" : "neg");
+
+  document.getElementById("kpiCashPatOut").textContent = fmtMoney(cashPatOut);
+  document.getElementById("kpiCashPatIn").textContent = fmtSignedMoney(cashPatIn);
+
+  const scopedPatRows = patRows.filter(r => {
+    if (state.patTypeFilter !== "ALL" && r.tipo !== state.patTypeFilter) return false;
+    return true;
+  });
+
+  renderPatrimonialCharts(scopedPatRows);
+  renderPatrimonialSummaryTable(scopedPatRows);
+  renderPatrimonialMonthlyTable(patRows);
+  renderPatrimonialTransactionsTable(scopedPatRows);
+}
+
+function renderPatrimonialCharts(scopedPatRows) {
+  const allUnfilteredPeriod = getBaseFilteredRows(true, true);
+  const { targetYms, windowPill } = getEvolutionTargetYms(allUnfilteredPeriod);
+  const winEl = document.getElementById("patEvoWindow");
+  if (winEl) winEl.textContent = windowPill;
+
+  const mapYm = {};
+  targetYms.forEach(ym => {
+    mapYm[ym] = { ACTIVO: 0, INVERSION: 0, PASIVO: 0, TRANSFERENCIA: 0, cash: 0 };
+  });
+
+  allUnfilteredPeriod.forEach(r => {
+    if (!isPatrimonialType(r.tipo) || !mapYm[r.ym]) return;
+    if (state.patTypeFilter !== "ALL" && r.tipo !== state.patTypeFilter) return;
+    const v = amt(r);
+    if (mapYm[r.ym][r.tipo] !== undefined) mapYm[r.ym][r.tipo] += v;
+    if (r.tipo !== "TRANSFERENCIA") mapYm[r.ym].cash += v;
+  });
+
+  const labels = targetYms.map(ym => {
+    const [y, m] = ym.split("-").map(Number);
+    return `${MONTH_SHORT[m - 1]} ${y}`;
+  });
+
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim();
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+
+  const datasets = [];
+  if (state.patTypeFilter === "ALL" || state.patTypeFilter === "ACTIVO") {
+    datasets.push({ type: "bar", label: "Activo", data: targetYms.map(ym => mapYm[ym].ACTIVO), backgroundColor: "rgba(245, 158, 11, 0.82)", borderRadius: 4 });
+  }
+  if (state.patTypeFilter === "ALL" || state.patTypeFilter === "INVERSION") {
+    datasets.push({ type: "bar", label: "Inversión", data: targetYms.map(ym => mapYm[ym].INVERSION), backgroundColor: "rgba(59, 130, 246, 0.82)", borderRadius: 4 });
+  }
+  if (state.patTypeFilter === "ALL" || state.patTypeFilter === "PASIVO") {
+    datasets.push({ type: "bar", label: "Pasivo", data: targetYms.map(ym => mapYm[ym].PASIVO), backgroundColor: "rgba(244, 63, 94, 0.82)", borderRadius: 4 });
+  }
+  if (state.patTypeFilter === "ALL" || state.patTypeFilter === "TRANSFERENCIA") {
+    datasets.push({ type: "bar", label: "Transferencia", data: targetYms.map(ym => mapYm[ym].TRANSFERENCIA), backgroundColor: "rgba(167, 139, 250, 0.82)", borderRadius: 4 });
+  }
+  datasets.push({
+    type: "line",
+    label: "Consumo / Flujo Cash Patrimonial",
+    data: targetYms.map(ym => mapYm[ym].cash),
+    borderColor: "#10b981",
+    backgroundColor: "#10b981",
+    borderWidth: 2.5,
+    tension: 0.25,
+    pointRadius: 3
+  });
+
+  if (charts.patEvo) charts.patEvo.destroy();
+  charts.patEvo = new Chart(document.getElementById("chartPatEvo"), {
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtSignedMoney(ctx.parsed.y)}` } }
+      },
+      scales: {
+        x: { ticks: { color: textColor }, grid: { display: false } },
+        y: { ticks: { color: textColor, callback: v => fmtSignedMoney(v) }, grid: { color: gridColor } }
+      }
+    }
+  });
+
+  const aggCat = {};
+  scopedPatRows.forEach(r => {
+    const key = `${r.tipo} · ${r.tag || r.cat}`;
+    aggCat[key] = (aggCat[key] || 0) + amt(r);
+  });
+  const topCat = Object.entries(aggCat)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .slice(0, 10);
+
+  if (charts.patCat) charts.patCat.destroy();
+  charts.patCat = new Chart(document.getElementById("chartPatCat"), {
+    type: "bar",
+    data: {
+      labels: topCat.map(x => x[0]),
+      datasets: [{
+        label: "Flujo Neto",
+        data: topCat.map(x => x[1]),
+        backgroundColor: topCat.map(x => x[1] >= 0 ? "rgba(16, 185, 129, 0.8)" : "rgba(244, 63, 94, 0.8)"),
+        borderRadius: 5
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `Neto: ${fmtSignedMoney(ctx.parsed.x)}` } }
+      },
+      scales: {
+        x: { ticks: { color: textColor, callback: v => fmtSignedMoney(v) }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderPatrimonialSummaryTable(scopedPatRows) {
+  const map = {};
+  scopedPatRows.forEach(r => {
+    const key = `${r.tipo}||${r.macro}||${r.cat}||${r.tag}`;
+    if (!map[key]) {
+      map[key] = { tipo: r.tipo, macro: r.macro, cat: r.cat, tag: r.tag, ops: 0, inSum: 0, outSum: 0, net: 0 };
+    }
+    const v = amt(r);
+    map[key].ops += 1;
+    map[key].net += v;
+    if (v > 0) map[key].inSum += v;
+    else if (v < 0) map[key].outSum += v;
+  });
+
+  const list = Object.values(map).sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+  const tbody = document.getElementById("tbodyPatSummary");
+  const tfoot = document.getElementById("tfootPatSummary");
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Sin movimientos patrimoniales para los filtros actuales</td></tr>`;
+    tfoot.innerHTML = "";
+    return;
+  }
+
+  let totOps = 0, totIn = 0, totOut = 0, totNet = 0;
+  tbody.innerHTML = list.map(item => {
+    totOps += item.ops;
+    totIn += item.inSum;
+    totOut += item.outSum;
+    totNet += item.net;
+    return `<tr>
+      <td><span class="tag-amber">${item.tipo}</span></td>
+      <td>${item.macro}</td>
+      <td>${item.cat}</td>
+      <td>${item.tag}</td>
+      <td class="num">${item.ops.toLocaleString("es-AR")}</td>
+      <td class="num pos">${fmtSignedMoney(item.inSum)}</td>
+      <td class="num neg">${fmtMoney(item.outSum)}</td>
+      <td class="num ${item.net >= 0 ? "pos" : "neg"}">${fmtSignedMoney(item.net)}</td>
+    </tr>`;
+  }).join("");
+
+  tfoot.innerHTML = `<tr>
+    <td colspan="4">TOTAL</td>
+    <td class="num">${totOps.toLocaleString("es-AR")}</td>
+    <td class="num pos">${fmtSignedMoney(totIn)}</td>
+    <td class="num neg">${fmtMoney(totOut)}</td>
+    <td class="num ${totNet >= 0 ? "pos" : "neg"}">${fmtSignedMoney(totNet)}</td>
+  </tr>`;
+}
+
+function renderPatrimonialMonthlyTable(patRows) {
+  const byYm = {};
+  patRows.forEach(r => {
+    if (!byYm[r.ym]) byYm[r.ym] = { ACTIVO: 0, INVERSION: 0, PASIVO: 0, TRANSFERENCIA: 0, PATRIMONIAL: 0 };
+    const v = amt(r);
+    if (byYm[r.ym][r.tipo] !== undefined) byYm[r.ym][r.tipo] += v;
+    else byYm[r.ym].PATRIMONIAL += v;
+  });
+
+  const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
+  const tbody = document.getElementById("tbodyPatMonthly");
+  const tfoot = document.getElementById("tfootPatMonthly");
+
+  if (yms.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sin movimientos en el período</td></tr>`;
+    tfoot.innerHTML = "";
+    return;
+  }
+
+  let tAct = 0, tInv = 0, tPas = 0, tTrf = 0, tCash = 0;
+  tbody.innerHTML = yms.map(ym => {
+    const [y, m] = ym.split("-").map(Number);
+    const d = byYm[ym];
+    const cash = d.ACTIVO + d.INVERSION + d.PASIVO + d.PATRIMONIAL;
+    tAct += d.ACTIVO;
+    tInv += d.INVERSION;
+    tPas += d.PASIVO;
+    tTrf += d.TRANSFERENCIA;
+    tCash += cash;
+    return `<tr>
+      <td><strong>${MONTH_NAMES[m - 1]} ${y}</strong></td>
+      <td class="num pat">${fmtSignedMoney(d.ACTIVO)}</td>
+      <td class="num" style="color:var(--primary); font-weight:700;">${fmtSignedMoney(d.INVERSION)}</td>
+      <td class="num neg">${fmtSignedMoney(d.PASIVO)}</td>
+      <td class="num" style="color:#a78bfa; font-weight:700;">${fmtSignedMoney(d.TRANSFERENCIA)}</td>
+      <td class="num ${cash >= 0 ? "pos" : "neg"}">${fmtSignedMoney(cash)}</td>
+    </tr>`;
+  }).join("");
+
+  tfoot.innerHTML = `<tr>
+    <td>TOTAL</td>
+    <td class="num pat">${fmtSignedMoney(tAct)}</td>
+    <td class="num" style="color:var(--primary);">${fmtSignedMoney(tInv)}</td>
+    <td class="num neg">${fmtSignedMoney(tPas)}</td>
+    <td class="num" style="color:#a78bfa;">${fmtSignedMoney(tTrf)}</td>
+    <td class="num ${tCash >= 0 ? "pos" : "neg"}">${fmtSignedMoney(tCash)}</td>
+  </tr>`;
+}
+
+function renderPatrimonialTransactionsTable(scopedPatRows) {
+  const q = state.patSearch.trim().toLowerCase();
+  const list = scopedPatRows
+    .filter(r => {
+      if (!q) return true;
+      const blob = `${r.fecha} ${r.tipo} ${r.cuenta} ${r.tipoCuenta} ${r.macro} ${r.cat} ${r.tag} ${r.desc}`.toLowerCase();
+      return blob.includes(q);
+    })
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || Math.abs(amt(b)) - Math.abs(amt(a)));
+
+  let netSub = 0;
+  list.forEach(r => { netSub += amt(r); });
+
+  const pill = document.getElementById("patTxSubtotalPill");
+  if (pill) pill.textContent = `Subtotal (${list.length.toLocaleString("es-AR")} ops): ${fmtSignedMoney(netSub)}`;
+
+  const slice = list.slice(0, 300);
+  document.getElementById("tbodyPatTx").innerHTML = slice.map(r => {
+    return `<tr>
+      <td>${r.fecha}</td>
+      <td><span class="tag-amber">${r.tipo}</span></td>
+      <td>${r.cuenta}</td>
+      <td>${r.tipoCuenta}</td>
+      <td>${r.macro}</td>
+      <td>${r.cat}</td>
+      <td>${r.tag}</td>
+      <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis;" title="${r.desc.replace(/"/g, "&quot;")}">${r.desc}</td>
+      <td class="num ${amt(r) >= 0 ? "pos" : "neg"}">${fmtSignedMoney(amt(r))}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">No hay movimientos patrimoniales que coincidan</td></tr>`;
+
+  document.getElementById("tfootPatTx").innerHTML = list.length > 0 ? `<tr>
+    <td colspan="8">SUBTOTAL FILTRADO (${list.length.toLocaleString("es-AR")} ops)</td>
+    <td class="num ${netSub >= 0 ? "pos" : "neg"}">${fmtSignedMoney(netSub)}</td>
+  </tr>` : "";
 }
 
 function getEvolutionTargetYms(allUnfilteredPeriod) {
@@ -1000,7 +1531,7 @@ function renderEvolutionChart() {
   const datasets = [];
   if (state.scope === "ALL") {
     datasets.push(
-      { type: "line", label: "Flujo Neto", data: dataNet, borderColor: "#60a5fa", backgroundColor: "#60a5fa", tension: 0.25, borderWidth: 2.5, pointRadius: 3, order: 1 },
+      { type: "line", label: "Flujo Operativo Neto", data: dataNet, borderColor: "#60a5fa", backgroundColor: "#60a5fa", tension: 0.25, borderWidth: 2.5, pointRadius: 3, order: 1 },
       { type: "bar", label: "Ingresos", data: dataIng, backgroundColor: "rgba(16, 185, 129, 0.8)", borderRadius: 4, order: 2 },
       { type: "bar", label: "Gastos", data: dataGas, backgroundColor: "rgba(244, 63, 94, 0.8)", borderRadius: 4, order: 3 }
     );
@@ -1110,7 +1641,6 @@ function renderDonutChart(rows) {
     }
   });
 
-  // Píldoras interactivas debajo del gráfico (color + etiqueta de Macro-Categoría) para clic directo en cualquier dispositivo
   const canvasEl = document.getElementById("chartMacro");
   let pillsContainer = document.getElementById("macroClickPills");
   if (!pillsContainer) {
@@ -1340,7 +1870,7 @@ function renderBalanceTable(rows) {
     if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0, pat: 0 };
     if (r.tipo === "INGRESO") byYm[r.ym].ing += amt(r);
     else if (r.tipo === "GASTO") byYm[r.ym].gas += amt(r);
-    else if (r.tipo === "PATRIMONIAL") byYm[r.ym].pat += amt(r);
+    else if (isPatrimonialType(r.tipo)) byYm[r.ym].pat += amt(r);
   });
 
   const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
@@ -1432,7 +1962,7 @@ function renderTransactionsTable(rows) {
     const v = amt(r);
     if (r.tipo === "INGRESO") { ingSub += v; subtotalAll += v; }
     else if (r.tipo === "GASTO") { gasSub += v; subtotalAll -= v; }
-    else if (r.tipo === "PATRIMONIAL") { patSub += v; subtotalAll += v; }
+    else if (isPatrimonialType(r.tipo)) { patSub += v; subtotalAll += v; }
   });
 
   const subPill = document.getElementById("txSubtotalPill");
@@ -1495,12 +2025,11 @@ function renderTransactionsTable(rows) {
       <td>${r.cat}</td>
       <td>${r.tag}</td>
       <td style="max-width:340px; overflow:hidden; text-overflow:ellipsis;" title="${r.desc.replace(/"/g, "&quot;")}">${r.desc}</td>
-      <td class="num ${valClass}">${r.tipo === "PATRIMONIAL" ? fmtSignedMoney(amt(r)) : fmtMoney(amt(r))}</td>
+      <td class="num ${valClass}">${isPatrimonialType(r.tipo) ? fmtSignedMoney(amt(r)) : fmtMoney(amt(r))}</td>
     </tr>`;
   }).join("") || `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No hay transacciones que coincidan con el filtro</td></tr>`;
 }
 
-/* ---------- DATA LOADING ---------- */
 async function loadFromUrl(url) {
   const statusText = document.getElementById("statusText");
   const statusDot = document.getElementById("statusDot");
@@ -1530,10 +2059,43 @@ async function loadFromUrl(url) {
   }
 }
 
-/* ---------- EVENTS ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || "dark";
   document.documentElement.setAttribute("data-theme", savedTheme);
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetTab = btn.dataset.tab;
+      state.activeTab = targetTab;
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        const isAct = b.dataset.tab === targetTab;
+        b.classList.toggle("active", isAct);
+        b.setAttribute("aria-selected", isAct ? "true" : "false");
+      });
+      document.getElementById("panel-flow").classList.toggle("active", targetTab === "flow");
+      document.getElementById("panel-patrimony").classList.toggle("active", targetTab === "patrimony");
+      document.getElementById("activeTabHint").textContent = targetTab === "flow"
+        ? "Vista operativa: Ingresos y Gastos"
+        : "Vista patrimonial: Activo · Inversión · Pasivo · Transferencia";
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll("#patTypeFilter button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#patTypeFilter button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.patTypeFilter = btn.dataset.ptype;
+      renderPatrimonialTab(getPatrimonialFilteredRows(false));
+    });
+  });
+
+  document.getElementById("txtPatSearch").addEventListener("input", e => {
+    state.patSearch = e.target.value;
+    renderPatrimonialTransactionsTable(getPatrimonialFilteredRows(false).filter(r =>
+      state.patTypeFilter === "ALL" || r.tipo === state.patTypeFilter
+    ));
+  });
 
   document.getElementById("btnTheme").addEventListener("click", () => {
     const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
@@ -1615,12 +2177,16 @@ document.addEventListener("DOMContentLoaded", () => {
     state.account = "ALL";
     state.excludedAccounts.clear();
     state.scope = "ALL";
+    state.patTypeFilter = "ALL";
     state.macro = "";
     state.cat = "";
     state.tag = "";
     state.search = "";
+    state.patSearch = "";
     document.getElementById("selScope").value = "ALL";
     document.getElementById("txtSearch").value = "";
+    document.getElementById("txtPatSearch").value = "";
+    document.querySelectorAll("#patTypeFilter button").forEach(b => b.classList.toggle("active", b.dataset.ptype === "ALL"));
     populateGlobalSelectors();
     renderAll();
   });
