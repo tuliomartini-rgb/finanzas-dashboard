@@ -214,7 +214,6 @@
     th.sortable:hover { color: var(--text); }
     tfoot td { background: var(--bg-card-2); font-weight: 800; border-top: 2px solid var(--border); }
 
-  
     /* Navigation Tabs */
     .tabs-bar {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
@@ -235,7 +234,7 @@
     .tab-panel.active { display: flex; }
     .tag-blue { background: var(--primary-soft); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
     .tag-purple { background: rgba(139, 92, 246, 0.16); color: #a78bfa; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; }
-</style>
+  </style>
 </head>
 <body>
 <div class="container">
@@ -748,7 +747,7 @@ const PATRIMONIAL_TYPES = new Set(["ACTIVO", "INVERSION", "PASIVO", "TRANSFERENC
 
 const DEMO_ROWS = [
   { fecha: "2026-09-10", year: 2026, month: 9, ym: "2026-09", tipo: "INGRESO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Ingresos Laborales", cat: "Honorarios", tag: "Consultoría", desc: "Honorarios septiembre", usd: 19079, ars: 22894800 },
-  { fecha: "2026-09-15", year: 2026, month: 9, ym: "2026-09", tipo: "GASTO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas y consumos", usd: 8875, ars: 10650000 },
+  { fecha: "2026-09-15", year: 2026, month: 9, ym: "2026-09", tipo: "GASTO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Vivienda y Servicios", cat: "Expensas", tag: "Depto Belgrano", desc: "Expensas y consumos", usd: -8875, ars: -10650000 },
   { fecha: "2026-09-16", year: 2026, month: 9, ym: "2026-09", tipo: "ACTIVO", cuenta: "Banco Galicia", tipoCuenta: "Caja de Ahorros", macro: "Patrimonio y Transferencias", cat: "ACTIVO", tag: "AUTOMOVIL", desc: "Pago unidad vehículo", usd: -12000, ars: -18000000 },
   { fecha: "2026-09-18", year: 2026, month: 9, ym: "2026-09", tipo: "INVERSION", cuenta: "Galicia Inversiones", tipoCuenta: "Cuenta Inversion", macro: "Patrimonio y Transferencias", cat: "INVERSIONES", tag: "FCI", desc: "Suscripción FCI renta", usd: -2500, ars: -3750000 },
   { fecha: "2026-09-19", year: 2026, month: 9, ym: "2026-09", tipo: "TRANSFERENCIA", cuenta: "MercadoPago", tipoCuenta: "Caja de Ahorros", macro: "Patrimonio y Transferencias", cat: "TRANSFER", tag: "TRANSFER", desc: "Pase interno entre cuentas", usd: 1500, ars: 2250000 }
@@ -944,8 +943,24 @@ function fmtSignedMoney(val, curr = state.currency) {
   return fmtMoney(n, curr);
 }
 
+// Importe real de la fila (con signo de origen: gastos negativos, reintegros positivos)
 function amt(r) {
   return state.currency === "USD" ? r.usd : r.ars;
+}
+
+// Magnitud de gasto para KPIs, gráficos, jerarquía y balance (gasto -100 -> +100; reintegro +20 -> -20)
+function expenseMag(r) {
+  return -amt(r);
+}
+
+// Variación patrimonial (partida doble implícita desde el movimiento de caja):
+// - ACTIVO / INVERSION: compra/aporte (caja -) => sube el rubro (+); venta/rescate (caja +) => baja el rubro (-)
+// - PASIVO: tomar deuda (caja +) => sube deuda (+); cancelar deuda (caja -) => baja deuda (-)
+// - TRANSFERENCIA: se mantiene el signo de caja del movimiento
+function patDelta(r) {
+  const v = amt(r);
+  if (r.tipo === "ACTIVO" || r.tipo === "INVERSION" || r.tipo === "PASIVO") return -v;
+  return v;
 }
 
 function isPatrimonialType(tipo) {
@@ -1112,10 +1127,9 @@ function renderAll() {
 
   let ing = 0, gas = 0, patNet = 0, ingOps = 0, gasOps = 0, patOps = 0;
   rowsWithPat.forEach(r => {
-    const v = amt(r);
-    if (r.tipo === "INGRESO") { ing += v; ingOps++; }
-    else if (r.tipo === "GASTO") { gas += v; gasOps++; }
-    else if (isPatrimonialType(r.tipo)) { patNet += v; patOps++; }
+    if (r.tipo === "INGRESO") { ing += amt(r); ingOps++; }
+    else if (r.tipo === "GASTO") { gas += expenseMag(r); gasOps++; }
+    else if (isPatrimonialType(r.tipo)) { patNet += amt(r); patOps++; }
   });
   const opNeto = ing - gas;
   const margin = ing > 0 ? ((opNeto / ing) * 100).toFixed(1) : "0.0";
@@ -1162,31 +1176,32 @@ function renderPatrimonialTab(patRows) {
   let cashPatOut = 0;
 
   patRows.forEach(r => {
-    const v = amt(r);
+    const cashV = amt(r);
     const key = stats[r.tipo] ? r.tipo : "PATRIMONIAL";
-    stats[key].net += v;
+    const displayV = key === "TRANSFERENCIA" ? cashV : patDelta(r);
+    stats[key].net += displayV;
     stats[key].ops += 1;
-    if (v > 0) stats[key].inSum += v;
-    else if (v < 0) stats[key].outSum += v;
+    if (displayV > 0) stats[key].inSum += displayV;
+    else if (displayV < 0) stats[key].outSum += displayV;
 
     if (key !== "TRANSFERENCIA") {
-      cashPatNet += v;
-      if (v > 0) cashPatIn += v;
-      else if (v < 0) cashPatOut += v;
+      cashPatNet += cashV;
+      if (cashV > 0) cashPatIn += cashV;
+      else if (cashV < 0) cashPatOut += cashV;
     }
   });
 
   document.getElementById("kpiPatActivo").textContent = fmtSignedMoney(stats.ACTIVO.net);
   document.getElementById("kpiPatActivoOps").textContent = `${stats.ACTIVO.ops.toLocaleString("es-AR")} ops`;
-  document.getElementById("kpiPatActivoSplit").textContent = `+: ${fmtMoney(stats.ACTIVO.inSum)} / -: ${fmtMoney(stats.ACTIVO.outSum)}`;
+  document.getElementById("kpiPatActivoSplit").textContent = `Altas/Compras: ${fmtSignedMoney(stats.ACTIVO.inSum)} / Bajas/Ventas: ${fmtMoney(stats.ACTIVO.outSum)}`;
 
   document.getElementById("kpiPatInversion").textContent = fmtSignedMoney(stats.INVERSION.net);
   document.getElementById("kpiPatInversionOps").textContent = `${stats.INVERSION.ops.toLocaleString("es-AR")} ops`;
-  document.getElementById("kpiPatInversionSplit").textContent = `+: ${fmtMoney(stats.INVERSION.inSum)} / -: ${fmtMoney(stats.INVERSION.outSum)}`;
+  document.getElementById("kpiPatInversionSplit").textContent = `Aportes/Compras: ${fmtSignedMoney(stats.INVERSION.inSum)} / Rescates/Ventas: ${fmtMoney(stats.INVERSION.outSum)}`;
 
   document.getElementById("kpiPatPasivo").textContent = fmtSignedMoney(stats.PASIVO.net);
   document.getElementById("kpiPatPasivoOps").textContent = `${stats.PASIVO.ops.toLocaleString("es-AR")} ops`;
-  document.getElementById("kpiPatPasivoSplit").textContent = `+: ${fmtMoney(stats.PASIVO.inSum)} / -: ${fmtMoney(stats.PASIVO.outSum)}`;
+  document.getElementById("kpiPatPasivoSplit").textContent = `Aumentos: ${fmtSignedMoney(stats.PASIVO.inSum)} / Cancelaciones: ${fmtMoney(stats.PASIVO.outSum)}`;
 
   document.getElementById("kpiPatTransfer").textContent = fmtSignedMoney(stats.TRANSFERENCIA.net);
   document.getElementById("kpiPatTransferOps").textContent = `${stats.TRANSFERENCIA.ops.toLocaleString("es-AR")} ops`;
@@ -1224,9 +1239,10 @@ function renderPatrimonialCharts(scopedPatRows) {
   allUnfilteredPeriod.forEach(r => {
     if (!isPatrimonialType(r.tipo) || !mapYm[r.ym]) return;
     if (state.patTypeFilter !== "ALL" && r.tipo !== state.patTypeFilter) return;
-    const v = amt(r);
-    if (mapYm[r.ym][r.tipo] !== undefined) mapYm[r.ym][r.tipo] += v;
-    if (r.tipo !== "TRANSFERENCIA") mapYm[r.ym].cash += v;
+    const cashV = amt(r);
+    const barV = r.tipo === "TRANSFERENCIA" ? cashV : patDelta(r);
+    if (mapYm[r.ym][r.tipo] !== undefined) mapYm[r.ym][r.tipo] += barV;
+    if (r.tipo !== "TRANSFERENCIA") mapYm[r.ym].cash += cashV;
   });
 
   const labels = targetYms.map(ym => {
@@ -1280,7 +1296,8 @@ function renderPatrimonialCharts(scopedPatRows) {
   const aggCat = {};
   scopedPatRows.forEach(r => {
     const key = `${r.tipo} · ${r.tag || r.cat}`;
-    aggCat[key] = (aggCat[key] || 0) + amt(r);
+    const v = r.tipo === "TRANSFERENCIA" ? amt(r) : patDelta(r);
+    aggCat[key] = (aggCat[key] || 0) + v;
   });
   const topCat = Object.entries(aggCat)
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
@@ -1320,7 +1337,7 @@ function renderPatrimonialSummaryTable(scopedPatRows) {
     if (!map[key]) {
       map[key] = { tipo: r.tipo, macro: r.macro, cat: r.cat, tag: r.tag, ops: 0, inSum: 0, outSum: 0, net: 0 };
     }
-    const v = amt(r);
+    const v = r.tipo === "TRANSFERENCIA" ? amt(r) : patDelta(r);
     map[key].ops += 1;
     map[key].net += v;
     if (v > 0) map[key].inSum += v;
@@ -1367,10 +1384,12 @@ function renderPatrimonialSummaryTable(scopedPatRows) {
 function renderPatrimonialMonthlyTable(patRows) {
   const byYm = {};
   patRows.forEach(r => {
-    if (!byYm[r.ym]) byYm[r.ym] = { ACTIVO: 0, INVERSION: 0, PASIVO: 0, TRANSFERENCIA: 0, PATRIMONIAL: 0 };
-    const v = amt(r);
-    if (byYm[r.ym][r.tipo] !== undefined) byYm[r.ym][r.tipo] += v;
-    else byYm[r.ym].PATRIMONIAL += v;
+    if (!byYm[r.ym]) byYm[r.ym] = { ACTIVO: 0, INVERSION: 0, PASIVO: 0, TRANSFERENCIA: 0, PATRIMONIAL: 0, cash: 0 };
+    const cashV = amt(r);
+    const barV = r.tipo === "TRANSFERENCIA" ? cashV : patDelta(r);
+    if (byYm[r.ym][r.tipo] !== undefined) byYm[r.ym][r.tipo] += barV;
+    else byYm[r.ym].PATRIMONIAL += barV;
+    if (r.tipo !== "TRANSFERENCIA") byYm[r.ym].cash += cashV;
   });
 
   const yms = Object.keys(byYm).sort((a, b) => a.localeCompare(b));
@@ -1387,7 +1406,7 @@ function renderPatrimonialMonthlyTable(patRows) {
   tbody.innerHTML = yms.map(ym => {
     const [y, m] = ym.split("-").map(Number);
     const d = byYm[ym];
-    const cash = d.ACTIVO + d.INVERSION + d.PASIVO + d.PATRIMONIAL;
+    const cash = d.cash;
     tAct += d.ACTIVO;
     tInv += d.INVERSION;
     tPas += d.PASIVO;
@@ -1516,7 +1535,7 @@ function renderEvolutionChart() {
   allUnfilteredPeriod.forEach(r => {
     if (map[r.ym]) {
       if (r.tipo === "INGRESO") map[r.ym].ing += amt(r);
-      else if (r.tipo === "GASTO") map[r.ym].gas += amt(r);
+      else if (r.tipo === "GASTO") map[r.ym].gas += expenseMag(r);
     }
   });
 
@@ -1594,7 +1613,8 @@ function renderDonutChart(rows) {
 
   const agg = {};
   rows.filter(r => r.tipo === targetType).forEach(r => {
-    agg[r.macro] = (agg[r.macro] || 0) + amt(r);
+    const val = targetType === "GASTO" ? expenseMag(r) : amt(r);
+    agg[r.macro] = (agg[r.macro] || 0) + val;
   });
   const sorted = Object.entries(agg).sort((a, b) => b[1] - a[1]);
   const palette = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#64748b"];
@@ -1698,7 +1718,7 @@ function renderHierarchySection(rows) {
   filtered.forEach(r => {
     const k = r[levelKey] || "Sin especificar";
     if (!agg[k]) agg[k] = { sum: 0, ops: 0 };
-    const v = amt(r);
+    const v = state.hierType === "GASTO" ? expenseMag(r) : amt(r);
     agg[k].sum += v;
     agg[k].ops += 1;
     total += v;
@@ -1797,7 +1817,7 @@ function renderHierarchyExpenseEvolutionChart() {
     if (state.cat && r.cat !== state.cat) return;
     if (state.tag && r.tag !== state.tag) return;
     if (!Object.prototype.hasOwnProperty.call(mapGas, r.ym)) return;
-    if (r.tipo === "GASTO") mapGas[r.ym] += amt(r);
+    if (r.tipo === "GASTO") mapGas[r.ym] += expenseMag(r);
     else if (r.tipo === "INGRESO") mapIng[r.ym] += amt(r);
   });
 
@@ -1869,7 +1889,7 @@ function renderBalanceTable(rows) {
   filteredRows.forEach(r => {
     if (!byYm[r.ym]) byYm[r.ym] = { ing: 0, gas: 0, pat: 0 };
     if (r.tipo === "INGRESO") byYm[r.ym].ing += amt(r);
-    else if (r.tipo === "GASTO") byYm[r.ym].gas += amt(r);
+    else if (r.tipo === "GASTO") byYm[r.ym].gas += expenseMag(r);
     else if (isPatrimonialType(r.tipo)) byYm[r.ym].pat += amt(r);
   });
 
@@ -1957,12 +1977,20 @@ function renderTransactionsTable(rows) {
   const slice = list.slice(0, 300);
 
   let subtotalAll = 0;
-  let ingSub = 0, gasSub = 0, patSub = 0;
+  let ingSub = 0, gasMagSub = 0, gasSignedSub = 0, patSub = 0;
   list.forEach(r => {
     const v = amt(r);
-    if (r.tipo === "INGRESO") { ingSub += v; subtotalAll += v; }
-    else if (r.tipo === "GASTO") { gasSub += v; subtotalAll -= v; }
-    else if (isPatrimonialType(r.tipo)) { patSub += v; subtotalAll += v; }
+    if (r.tipo === "INGRESO") {
+      ingSub += v;
+      subtotalAll += v;
+    } else if (r.tipo === "GASTO") {
+      gasMagSub += expenseMag(r);
+      gasSignedSub += v;
+      subtotalAll += v;
+    } else if (isPatrimonialType(r.tipo)) {
+      patSub += v;
+      subtotalAll += v;
+    }
   });
 
   const subPill = document.getElementById("txSubtotalPill");
@@ -1970,14 +1998,14 @@ function renderTransactionsTable(rows) {
   if (subPill) {
     if (list.length === 0) {
       subPill.textContent = "Subtotal filtrado (0 ops): $0";
-    } else if (ingSub > 0 && gasSub === 0 && patSub === 0) {
+    } else if (ingSub > 0 && gasMagSub === 0 && patSub === 0) {
       subPill.textContent = `Subtotal Ingresos (${list.length} ops): ${fmtMoney(ingSub)}`;
-    } else if (gasSub > 0 && ingSub === 0 && patSub === 0) {
-      subPill.textContent = `Subtotal Gastos (${list.length} ops): ${fmtMoney(gasSub)}`;
-    } else if (patSub !== 0 && ingSub === 0 && gasSub === 0) {
+    } else if (gasMagSub > 0 && ingSub === 0 && patSub === 0) {
+      subPill.textContent = `Subtotal Gastos (${list.length} ops): ${fmtMoney(gasSignedSub)}`;
+    } else if (patSub !== 0 && ingSub === 0 && gasMagSub === 0) {
       subPill.textContent = `Subtotal Patrimonial (${list.length} ops): ${fmtSignedMoney(patSub)}`;
     } else {
-      subPill.textContent = `Flujo neto filtrado (${list.length} ops): ${fmtSignedMoney(subtotalAll)} (Ing ${fmtMoney(ingSub)} · Gas ${fmtMoney(gasSub)})`;
+      subPill.textContent = `Flujo neto filtrado (${list.length} ops): ${fmtSignedMoney(subtotalAll)} (Ing ${fmtMoney(ingSub)} · Gas ${fmtMoney(gasSignedSub)})`;
     }
   }
 
@@ -1985,7 +2013,7 @@ function renderTransactionsTable(rows) {
     if (list.length === 0) {
       tfootTx.innerHTML = "";
     } else {
-      const hasMixedTypes = (ingSub > 0 ? 1 : 0) + (gasSub > 0 ? 1 : 0) + (patSub !== 0 ? 1 : 0) > 1;
+      const hasMixedTypes = (ingSub > 0 ? 1 : 0) + (gasMagSub > 0 ? 1 : 0) + (patSub !== 0 ? 1 : 0) > 1;
       const footLabel = list.length > 300
         ? `SUBTOTAL FILTRADO (${list.length.toLocaleString("es-AR")} ops · top 300 visibles)`
         : `SUBTOTAL FILTRADO (${list.length.toLocaleString("es-AR")} ops)`;
@@ -1994,7 +2022,7 @@ function renderTransactionsTable(rows) {
       let footClass = "";
       if (!hasMixedTypes) {
         if (ingSub > 0) { footValHtml = fmtMoney(ingSub); footClass = "pos"; }
-        else if (gasSub > 0) { footValHtml = fmtMoney(gasSub); footClass = "neg"; }
+        else if (gasMagSub > 0) { footValHtml = fmtMoney(gasSignedSub); footClass = "neg"; }
         else { footValHtml = fmtSignedMoney(patSub); footClass = "pat"; }
       } else {
         footValHtml = fmtSignedMoney(subtotalAll);
@@ -2003,7 +2031,7 @@ function renderTransactionsTable(rows) {
 
       const detailParts = [];
       if (ingSub > 0) detailParts.push(`Ing: ${fmtMoney(ingSub)}`);
-      if (gasSub > 0) detailParts.push(`Gas: ${fmtMoney(gasSub)}`);
+      if (gasMagSub > 0) detailParts.push(`Gas: ${fmtMoney(gasSignedSub)}`);
       if (patSub !== 0) detailParts.push(`Pat: ${fmtSignedMoney(patSub)}`);
       const detailText = hasMixedTypes && detailParts.length > 0 ? ` (${detailParts.join(" | ")})` : "";
 
